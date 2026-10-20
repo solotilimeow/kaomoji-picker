@@ -1,0 +1,3252 @@
+#!/usr/bin/env bash
+# kaomoji: searchable kaomoji picker for Wayland (KDE Plasma, Sway, Hyprland...)
+# https://github.com/solotilimeow/kaomoji-picker
+#
+# Needs fuzzel 1.11 or newer and wl-clipboard; libnotify (notify-send) is
+# optional and shows a "Copied" notification. On Arch:
+#   sudo pacman -S --needed fuzzel wl-clipboard libnotify
+#
+# Press your shortcut, type a word ("shrug", "cat", "flip table"...),
+# pick one with Enter, then paste it with Ctrl+V.
+#
+# Built in: 3179 kaomoji (the list at the bottom of this file).
+# Your own: ~/.config/kaomoji.txt, one per line: the kaomoji, then
+# 3 spaces, then search words. Yours are listed first, and updating
+# this script never touches that file. Duplicates are hidden.
+#
+# Most built-in entries come from kaomoji-collection
+# (https://github.com/kaomojiya-collection/kaomoji-collection). The block
+# marked "from rofimoji" near the end comes from rofimoji
+# (https://github.com/fdw/rofimoji), which took its kaomoji from
+# emoticon-data (https://github.com/w33ble/emoticon-data). All three are
+# released under the MIT License:
+#
+#   MIT License
+#
+#   Copyright (c) 2026 Kaomojiya (https://www.kaomojiya.org)
+#   Copyright (c) 2017-2026 Fabian Winter (rofimoji)
+#   Copyright (c) 2014 Joe Fleming (emoticon-data)
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a copy
+#   of this software and associated documentation files (the "Software"), to deal
+#   in the Software without restriction, including without limitation the rights
+#   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#   copies of the Software, and to permit persons to whom the Software is
+#   furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included in all
+#   copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#   SOFTWARE.
+
+custom="${XDG_CONFIG_HOME:-$HOME/.config}/kaomoji.txt"
+
+if [ ! -f "$custom" ]; then
+    mkdir -p "$(dirname "$custom")"
+    echo "# Your own kaomoji: the kaomoji, then 3 spaces, then search words" > "$custom"
+fi
+
+builtin_list() {
+cat <<'KAOMOJI_LIST_END'
+(＾▽＾)   happy smile joy
+(◕‿◕)   happy smile cute
+(✿◠‿◠)   happy flower cute
+ヽ(・∀・)ﾉ   happy excited yay
+(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧   excited sparkle magic yay
+＼(^o^)／   yay cheer celebrate
+(⌒‿⌒)   content happy
+( ˘ω˘ )   content calm peaceful
+(￣▽￣)ノ   wave hi hello
+(｡･ω･)ﾉﾞ   wave hi bye
+(*^‿^*)   blush happy
+(〃▽〃)   blush shy embarrassed
+(⁄ ⁄•⁄ω⁄•⁄ ⁄)   shy embarrassed blush
+(♡˙︶˙♡)   love heart
+(´｡• ᵕ •｡`) ♡   love cute heart
+(っ´▽`)っ   hug
+(づ｡◕‿‿◕｡)づ   hug cuddle
+(T_T)   cry sad
+(╥﹏╥)   cry sad tears
+(｡•́︿•̀｡)   sad pout
+(ಥ﹏ಥ)   cry sob
+(｡>﹏<｡)   ouch pain wince
+(╬ Ò﹏Ó)   angry mad
+(╯°□°)╯︵ ┻━┻   flip table rage angry
+(ノಠ益ಠ)ノ彡┻━┻   flip table rage
+┬─┬ノ( º _ ºノ)   unflip table calm
+(ಠ_ಠ)   disapproval stare look
+(¬_¬)   suspicious side eye
+(⊙_⊙)   shocked surprised
+(°ロ°)   shocked surprised gasp
+Σ(°△°|||)   shocked scared
+(・_・;)   nervous sweat awkward
+(￣ー￣)   smug
+(￢‿￢ )   smug sly
+¯\_(ツ)_/¯   shrug whatever idk
+┐(￣ヘ￣)┌   shrug whatever
+(－_－) zzZ   sleep tired
+(°∀°)b   thumbs up good ok
+ᕦ(ò_óˇ)ᕤ   strong flex muscle
+(ง •̀_•́)ง   fight determined
+( •_•)>⌐■-■   deal with it sunglasses cool
+(⌐■_■)   cool sunglasses
+ʕ•ᴥ•ʔ   bear cute animal
+(=^･ω･^=)   cat meow
+(^・ω・^ )   cat neko
+∪･ω･∪   dog puppy
+( ˘▽˘)っ旦   tea relax
+(っ˘ڡ˘ς)   yummy food delicious
+( ͡° ͜ʖ ͡°)   lenny suggestive
+(＾～＾)   whistle innocent
+m(_ _)m   sorry bow apologize thanks
+(*◡̈)   smile happy
+（´∀｀）   smile happy
+(╹◡╹)   smile happy
+(´ー｀)   smile happy
+(*´ `)   smile happy
+(˙˘˙*)   smile happy
+(^^)   smile happy
+(^^♪   smile happy
+(^_^)   smile happy
+(^-^)/   smile happy
+(^_^)v   smile happy
+(*^-^)   smile happy
+(´▽`)   smile happy
+(*^^*)   smile happy
+(*´ω`*)   smile happy
+(*´∇`*)   smile happy
+(*^ω^*)   smile happy
+(◍′◡‵◍)   smile happy
+:-)   smile
+୧(˃◡˂)୨   happy
+\(°∀°)/   happy
+\( ¨̮ )/   happy
+\(　˙-˙　)/   happy
+٩(*´꒳`*)۶   happy
+( ᐢ˙꒳˙ᐢ )   happy
+(☆‿☆)   happy joy rejoice
+(˘ᴗ˘)♡   happy joy rejoice
+(/ω＼✿)   happy joy rejoice
+(´ω\*)   happy joy rejoice
+(⁎˃ᴗ˂⁎)   happy joy rejoice
+⭐(✧∀✧)⭐   happy joy rejoice
+(^o^)   fun happy
+(´∀`)   fun happy
+(＾ω＾)   fun happy
+(ˆ▽ˆ)   fun happy
+(⌒▽⌒)   fun happy
+(・∀・)   fun happy
+(≧▽≦）☆   cheerful happy
+(*ﾟ∀ﾟ*)   cheerful happy
+(*´∀｀*)   cheerful happy
+(o´∀`o)   cheerful happy
+ヾ(´∀｀)ﾉ   cheerful happy
+(ﾉ´∀｀*)   cheerful happy
+(＾▽＾)ノ   energetic cheerful
+(≧▽≦)ノ   energetic cheerful
+٩( ᐛ )و   energetic cheerful
+(ง˙∇˙)ว   energetic cheerful
+└(＾◇＾)┘   energetic cheerful
+٩( ü )و   energetic cheerful
+♪(´▽｀)   humming happy
+(ง ᐛ )ว   humming happy
+ᕕ( ᐛ )ᕗ   humming happy
+٩(ˊᗜˋ*)و   humming happy
+ヾ(≧▽≦*)o   humming happy
+٩( 'ω' )و   humming happy
+(≖ᴗ≖๑)やったー   yay did it win
+ﾔﾀｰ(⁎˃ᴗ˂⁎)   yay did it win
+|壁|゜∀゜)bﾔｯﾀ   yay did it win
+\ヤッター(･ㅂ･)/   yay did it win
+oヤッター(>ω<)o"   yay did it win
+ヤッター(ﾉ*°▽°)ﾉ   yay did it win
+(∩´∀｀)∩ﾜｰｲ   yay excited
+∩(´∀｀)∩ﾜｧｲ♪   yay excited
+(*ﾉˊᗜˋ*)ﾉﾜｰｲ   yay excited
+ヾ(〃^∇^)ﾉわぁい♪   yay excited
+ﾜｧ─ヽ(〃ｖ〃)ノ─ｲ   yay excited
+ヾ(o´∀`o)ﾉﾜｧｰｨ♪   yay excited
+v(≧∇≦)v   yay
+Ｏ(≧∇≦)Ｏ   yay
+＼(*≧◇≦)／   yay
+＼(^o^)／ｲｪｰｲ   yay
+(｀・∀・)ﾉｲｪ-ｲ！   yay
+（｀・ω・´）vイェイ！   yay
+(´∇)/   banzai cheer hooray
+( ´꒳)/   banzai cheer hooray
+(´∇｀)ﾉ   banzai cheer hooray
+( ´-)/   banzai cheer hooray
+(´∀｀)ノ   banzai cheer hooray
+(≧▽≦)/   banzai cheer hooray
+(ˊᗜˋ)و ﾖｯｼｬ!   alright yes
+┗(｀･∀･´)ﾖｯｼｬ!   alright yes
+( ･ㅂ･)و ﾖｯｼｬ!   alright yes
+(و'ω')و ﾖｯｼｬ!   alright yes
+✧(ˊᗜˋ*)و ﾖｯｼｬ!   alright yes
+(ง*´∀`)งﾖｯｼｬｧ!   alright yes
+d(∀)   fist pump yes win
+( ᐛ )و   fist pump yes win
+(^_^)b   fist pump yes win
+(＾ω＾)b   fist pump yes win
+(･ω･)b   fist pump yes win
+(´∀`)b   fist pump yes win
+ｻｲｺｰ(・∀・)   best awesome
+ヽ(^o^)丿ｻｲｺｳ   best awesome
+最高(๑˃̵ᴗ˂̵)و   best awesome
+(ﾟ∀ﾟ)ｻｲｺｰ!👍   best awesome
+(´∀`)ﾉｻｲｺｳ!✨   best awesome
+ჱ̒⸝⸝•̀֊•́⸝⸝)   best awesome
+凄ッΣ(ﾟ艸ﾟ*)   wow amazing
+(⊙_⊙) すごっ   wow amazing
+Σ(๑°ㅁ°๑)すご   wow amazing
+ｽｺﾞｲ(⊙ө⊙;)   wow amazing
+(°д°) ｽｯｺﾞ   wow amazing
+(⊙ω⊙) ｽｺﾞｯ   wow amazing
+ಥ_ಥ   moved touched
+(个_个)   moved touched
+(;﹏;)   moved touched
+(´Д⊂ヽ   moved touched
+(*ToT)   moved touched
+ｏ(T▽T)o   moved touched
+(´∀｀)   relieved phew
+(´▽｀)   relieved phew
+(´ω｀)   relieved phew
+(´∇`)   relieved phew
+(•ᴗ•)   relieved phew
+(◠‿◠)   relieved phew
+⊂(^ω^)つｾﾌｾﾌ   safe phew
+（ ＾ω＾）セフセフ…   safe phew
+⊂（＾ω＾）⊃ミ⊃⊂彡   safe phew
+⊂( ･ω･ )⊃ｾｰﾌ   safe phew
+⊂( ＾ω＾)⊃ｾﾌｾﾌ   safe phew
+＿( ^ー^)＿ セーフ   safe phew
+⊂(｡◕‿◕｡)⊃   safe phew
+⊂(◍•ᴗ•◍)⊃   safe phew
+ृ( ˙꒳˙ )꜆セーフ   safe phew
+セーフ_( '꒳' )_   safe phew
+⊂(･∀･)つｾｰﾌ!!   safe phew
+⊂(^ω^)つｾﾌｾﾌ✌️   safe phew
+(ˊᵕˋ)♡   warm wholesome
+(ㆁᴗㆁ✿)   warm wholesome
+(*≧ω≦)   warm wholesome
+(*´꒳`*)   warm wholesome
+(｡◕‿◕｡)   warm wholesome
+(❁´◡`❁)   warm wholesome
+(´ω`)   healing calm
+(˘ω˘)   healing calm
+(◜ω◝)   healing calm
+(´˘`)   healing calm
+(◜◡◝)   healing calm
+(•ᵕ•)   healing calm
+(´◡`)   relax chill
+(´ー`)   relax chill
+(・ω・)   relax chill
+(￣▽￣)   relax chill
+(´∀｀*)   relax chill
+( ˘⌣˘)   relax chill
+( *´~`)   chill relaxed
+(*´ω｀*)   chill relaxed
+( ˘▾˘ )   chill relaxed
+( ˘︶˘ )   chill relaxed
+( ˙︶˙ )   chill relaxed
+✨( ˘ω˘ )✨   chill relaxed
+૮ ・ﻌ・ა   cute kawaii
+(⸝⸝◜~◝⸝⸝)   cute kawaii
+^⸝⸝⋟ˬ⋞⸝⸝^   cute kawaii
+ｶﾜ(・∀・)ｲｲ!!   cute kawaii
+(*∩ω∩)可愛い❤️   cute kawaii
+( ᐢ. ̫ .ᐢ )   cute kawaii
+(✧ω✧)   cute sparkle
+(ˊᗜˋ)   cute sparkle
+(✪ω✪)   cute sparkle
+(ᵔᴥᵔ)   cute sparkle
+(◕ᴗ◕)   cute sparkle
+(ᵔ◡ᵔ)   cute sparkle
+꒰⑅•ᴗ•⑅꒱   dreamy cute pastel
+＼（＾▽＾）／   dreamy cute pastel
+ヽ(´∀｀)ノ   dreamy cute pastel
+（｡･ω･｡)   dreamy cute pastel
+（*´꒳`*）   dreamy cute pastel
+ヾ(｡･ω･)ｼ   dreamy cute pastel
+(´ω｀♡)   dreamy enchanted
+(✿ ♥‿♥)   dreamy enchanted
+(｡♥‿♥｡)   dreamy enchanted
+(*´ー`*)   dreamy enchanted
+(●´ω｀●)   dreamy enchanted
+(*´∇｀*)   dreamy enchanted
+(☆д☆)ｷﾗｯ   sparkle shiny
+(ゝω・)キラッ☆   sparkle shiny
+( ・∇・)ｷﾗｯ   sparkle shiny
+( ✧ω✧)ｷﾗｯ   sparkle shiny
+( ✧д✧)ｷﾗｰﾝ   sparkle shiny
+☆(ゝω・)vｷﾗｯ   sparkle shiny
+(☆∀☆)   shiny sparkle
+(°∀°)   shiny sparkle
+(☆ω☆)   shiny sparkle
+(✧Д✧)   shiny sparkle
+(☆д☆)   shiny sparkle
+(⊙ω⊙)   shiny sparkle
+(❐_❐✧)   gleam shine
+(¯ｰ☆ｷﾗﾘｰﾝ   gleam shine
+(-ε☆)ｷﾗｰﾝ   gleam shine
+(￣ー☆ｷﾗﾘｰﾝ   gleam shine
+(´｡✪ω✪｡ )   gleam shine
+(*_*)キラーン!   gleam shine
+(＞＜)   dazzling bright
+(＞.＜)   dazzling bright
+(+_+)   dazzling bright
+(＊-＊)   dazzling bright
+(*_*)   dazzling bright
+(＠_＠)   dazzling bright
+(´ཫ`)尊い   precious
+(˘ཀ˘)尊ぃ   precious
+( ◜ཫ◝)尊い   precious
+(◉ᾥ◉｀)尊い   precious
+( ˘ཀ˘ )尊い   precious
+(ʚ˘ཀ˘ɞ)尊い   precious
+(¬‿¬)   cool
+(☆▽☆)   cool
+(◎‿◎)   cool
+(≖‿≖)   cool
+(◐‿◑)   cool
+(｀・ω・´)   cool
+▼ω▼   cool sunglasses
+◪_◪   cool sunglasses
+(▼▼)   cool sunglasses
+(▼∀▼)   cool sunglasses
+(▭-▭)   cool sunglasses
+(•⌐•)   cool sunglasses
+(￣¨￣)   smug proud
+(｀⌒´)   smug proud
+（￣ー+￣）   smug proud
+(･`ω･)   smug proud
+( ´_ゝ`)   smug proud
+(｀・ー・´)   smug proud
+(´∇｀)   proud ahem
+(⋋▂⋌)   proud ahem
+(¯▿¯)   proud ahem
+(￣～￣)   proud ahem
+(￣。￣)   proud ahem
+✨(¬ω¬)   proud ahem
+(^^)v   peace v sign
+(^o^)v   peace v sign
+( ᐛ )v   peace v sign
+(≧▽≦)v   peace v sign
+(ｙ＾＾ｙ)   peace v sign
+✌('ω')✌   peace v sign
+(^_-)   wink
+(-_^)   wink
+(•ω-)   wink
+(＾▽゜）   wink
+(｡･ω-)   wink
+( •◡-)   wink
+✿(◠‿◠)✿ﾜｸﾜｸ!   hyped excited
+v(｡･ω･｡)ｨｪｨ♪   hyped excited
+Ｏ(≧∇≦)Ｏ ｲｴｲ!!   hyped excited
+ｨｪｨY(≧∀≦)Yｨｪｨ   hyped excited
+v(≧∇≦)v ｲｪｪ～ｲ♪   hyped excited
+((Ψ＞ω^))ｨｪ~ｨ!!!   hyped excited
+≧ω≦   excited
+(≧∀≦)   excited
+(ᗒᗨᗕ)   excited
+(º∀º)   excited
+(＊≧∀≦)   excited
+(*≧▽≦)   excited
+o(＞ω＜)o   excited
+(*p'∀'q)   excited
+(っ ॑꒳ ॑c)   excited
+o(｡>ᴗ<｡)o︎   excited
+((٩(๑•ω•๑)۶))   excited
+(((o(*ﾟ▽ﾟ*)o)))   excited
+(♡ˊ艸ˋ)ﾜｸﾜｸ   excited eager
+ドキ(ㆁᴗㆁ✿)ドキ   excited eager
+(っ˘ω˘ς)ﾜｸﾜｸ   excited eager
+(*´∀｀*)ﾜｸﾜｸ   excited eager
+( ˘ ³˘)ﾜｸﾜｸ   excited eager
+(*´ω｀*)ﾜｸﾜｸ   excited eager
+(*ﾉﾉ)ｷｬｯ   squeal excited
+(/ω＼)ｷｬｯ   squeal excited
+(≧д≦)ｷｬｰ   squeal excited
+(≧ー≦)ｷｬｰ   squeal excited
+(*ﾉωﾉ)ｷｬｰ   squeal excited
+(mm*) ｷｬｯ   squeal excited
+(≧▽≦)   looking forward
+o(´∀｀)o   looking forward
+(*^▽^*)   looking forward
+ヾ(≧▽≦)ﾉ   looking forward
+(ﾉ´∀｀*)ﾉ   looking forward
+(´∀`)ﾜｸﾜｸ   looking forward
+o(≧▽≦)o   groove dance vibe
+ヽ(°〇°)ﾉ   groove dance vibe
+ヽ(^o^)丿   groove dance vibe
+ヽ(＾Д＾)ﾉ   groove dance vibe
+＼(￣▽￣)／   groove dance vibe
+ヾ(＾-＾)ノ   groove dance vibe
+(งツ)ว   dance
+~(˘▾˘~)   dance
+(~˘▾˘)~   dance
+┌(˘⌣˘)ʃ   dance
+(~‾⌣‾)~   dance
+♪( ◜ω◝و(و "   dance
+(o・★)   sing music
+(☆￢o)q   sing music
+(^_^♪)   sing music
+(*´○｀)   sing music
+ρ(~o~)   sing music
+（＾。＾）♪   sing music
+♫˘▾˘♫   karaoke sing
+♪(´ε` )   karaoke sing
+♫♪˙‿˙♫♪   karaoke sing
+♪(´▽`)ノ   karaoke sing
+♪(・ω・)ノ   karaoke sing
+♪( ´θ｀)ノ   karaoke sing
+(°³°)   whistle
+( ˙³˙ )   whistle
+♪(´ε｀ )   whistle
+( ˙³˙)~♪   whistle
+♪～(´ε｀ )   whistle
+( ^₃^)〜♪   whistle
+(^o^)笑   laugh
+(;´Д`)笑   laugh
+(≧▽≦)ｱﾊﾊ   laugh
+(´ᗜ`)ｱﾊﾊ   laugh
+(⁀ᗜ⁀)ｱﾊﾊ   laugh
+(≧з≦)ｱﾊﾊ   laugh
+(＾艸＾)   laugh cackle
+(^ω^)   laugh cackle
+(ﾟ∀ﾟ)   laugh cackle
+(^―^)   laugh cackle
+(✯◡✯)   laugh cackle
+(　´∀`)   laugh cackle
+⊙_⊙   laugh lol burst
+(•ㅂ•)/   laugh lol burst
+(,,ﾟДﾟ)   laugh lol burst
+╮(╯▽╰)╭   laugh lol burst
+╮(╯_╰)╭   laugh lol burst
+ㄟ(￣▽￣ㄟ)   laugh lol burst
+( ᐕ)   lol grass laugh
+( ᐛ )   lol grass laugh
+( ᐙ )   lol grass laugh
+🌱 ᐕ)ﾉ   lol grass laugh
+( ˙꒳˙ )   lol grass laugh
+( ˙-˙ )   lol grass laugh
+(〃艸〃)ｸｽ   giggle
+(〃艸〃)ｸｽｯ♪   giggle
+(*≧▽≦)ｸｽｯ   giggle
+(●´艸`)ｸｽｯ✿   giggle
+(✿˘艸˘✿)ｸｽｯ   giggle
+(*ˊᗜˋ*)ｸｽｯ   giggle
+(爆＾▽＾笑)   giggle
+ヽ(ﾟ▽、ﾟ)ﾉ   giggle
+(≧ε≦●)ﾉ彡   giggle
+('-'*)ﾌﾌ   giggle
+うふふ( *´艸`)   giggle
+ufu(´艸`)ウフフ   giggle
+＠＾▽＾＠   hehe giggle
+(*≧∀≦*)   hehe giggle
+ヽ(*゜∀゜*)ノ   hehe giggle
+(￣∇￣*)ゞエヘヘ   hehe giggle
+(*￣∇￣*) エヘヘ   hehe giggle
+(〃⌒ー⌒〃)ゞ エヘヘ   hehe giggle
+(ﾟДﾟ)   laugh sly
+(≧∇≦)   laugh sly
+(￣∇￣)   laugh sly
+(￣ω￣)   laugh sly
+(＾∀＾)   laugh sly
+(゜∀゜)   laugh sly
+(´Д⊂   laugh cry tears lol
+(T▽T)   laugh cry tears lol
+(；▽；)   laugh cry tears lol
+(；ω；)   laugh cry tears lol
+(；ᴗ；)   laugh cry tears lol
+(Ｔ▽Ｔ)   laugh cry tears lol
+(^Д^)   mock laugh
+(^∀^)   mock laugh
+(￣∀￣)   mock laugh
+(･∀･)   mock laugh
+( ^Д^)   mock laugh
+( ´∀｀)   mock laugh
+ಠ_ಠ   funny
+(O_o)   funny
+Σ(゜゜)   funny
+( ￣︶￣)   funny
+(◕‿◕✿)   funny
+( `°∀°)   funny
+(♥ε♥)   love heart
+(♥д♥)   love heart
+(♡_♡)   love heart
+(♡-♡)   love heart
+(♥ω♥*)   love heart
+(●♡∀♡)   love heart
+(♥_♥)   heart love
+(^♥^)   heart love
+(♥o♥)   heart love
+(•♥•)   heart love
+(♥◡♥)   heart love
+(♥∀♥)   heart love
+♡(ฅ́˘ฅ̀)♡   heart flutter love
+(ฅωฅ♥)ｷｭﾝ   heart flutter love
+(´ｪ`)ｷｭﾝ♡   heart flutter love
+♡(⸝⸝›_‹⸝⸝)   heart flutter love
+💕(๑ˇεˇ๑)♡   heart flutter love
+(๑´ω`๑)♡ｷｭﾝ   heart flutter love
+(・_・)♡ｷｭﾝ   heart shot love
+♡(´-ω-)ｷｭﾝ   heart shot love
+(˙-˙)♡ｽﾞｷｭﾝ   heart shot love
+♡(._.)ｽﾞｷｭﾝ   heart shot love
+♡(´ω`)ｽﾞｷｭｰﾝ   heart shot love
+❤(・ω・)ｽﾞｷｭｰﾝ   heart shot love
+(〃ω〃)   smitten in love
+(*♡_♡)   smitten in love
+(〃♡∀♡〃)   smitten in love
+(*ﾉωﾉ)♡   smitten in love
+(๑´ڡ`๑)   smitten in love
+( •_•)♡   smitten in love
+(>_<)   nervous heartbeat
+(｡･ω･｡)ﾉ   nervous heartbeat
+⸜(*ˊᵕˋ*)⸝   nervous heartbeat
+ドキ(´Å`●)ドキ   nervous heartbeat
+ドキドキ(〃ﾟ艸ﾟ))   nervous heartbeat
+(っ•ᴗ•c)ﾜｸﾜｸ   nervous heartbeat
+(˘ ³˘)   kiss
+(♡˙³˙)   kiss
+(♡ε♡ )   kiss
+(*´³`*)   kiss
+(^з^)-☆   kiss
+( º³º )   kiss
+(^・^)   kiss
+(^｡^)ﾎﾟｯ   kiss
+(＊´3`)キスミー   kiss
+☆⌒ヽ(*'､＾*)   kiss
+( ^з^) y -☆   kiss
+(^з^)-☆Chu!!   kiss
+(´∀`人´∀`)   lovey couple
+(´ω`人´ω`)   lovey couple
+(´ε`人´з`)   lovey couple
+(*´ω`人´ω`*)   lovey couple
+(*´∀`人´∀`*)   lovey couple
+(*´ー`人´ー`*)   lovey couple
+(〃ω〃)♡   valentine love
+(´∀`)♡   valentine love
+♡(◡‿◡)   valentine love
+(´∀｀)♡   valentine love
+(♡´∀`♡)   valentine love
+( ♡ᴗ♡ )   valentine love
+⊂(・﹏・⊂)   hug
+⊂（♡⌂♡）⊃   hug
+⊂(◉‿◉)つ   hug
+ლ(・ヮ・ლ)   hug
+(つ◉益◉)つ   hug
+⊂(・ヮ・⊂)   hug
+(つ▽｀)つ   hug cling
+(つ´∀｀)つ   hug cling
+(っ´ω`)っ   hug cling
+(つ・ω・)つ   hug cling
+⊂(・▽・⊂)   hug cling
+(っ´ω`c)   hug cling
+(*>ω<)ω<*)♡   squeeze hug
+(´｡•ω(•ω•｡`)   squeeze hug
+(`･ω･)ω-*)ぎゅ   squeeze hug
+(つ´ω`*)•ω•*)ぎゅ❤   squeeze hug
+(*´ω`*)´ω`*)ぎゅ♡   squeeze hug
+(´｡-ω(-ω-｡`)ぎゅっ♡   squeeze hug
+(´ω`*)   clingy needy
+(´・ω・)   clingy needy
+(´∀`*)   clingy needy
+(´ー`*)   clingy needy
+(´-ω-)   clingy needy
+(´･ω･`)   clingy needy
+(｡･ω･｡)   nuzzle
+(っ´･ω･)っ   nuzzle
+(´｡•ᵕ•｡`)   nuzzle
+(๑´･ω･`๑)   nuzzle
+⊂(´･ω･｀⊂)   nuzzle
+ლ(´･ω･｀ლ)   nuzzle
+ヾ(・ω・*)なでなで   pat head
+ヾ(・ω・ ) ﾅﾃﾞﾅﾃ   pat head
+(＊´︶`)ﾉﾅﾃﾞﾅﾃﾞ   pat head
+ヾ( ˙-˙ )ﾅﾃﾞﾅﾃﾞ   pat head
+(｀・ω・)ﾉ ﾅﾃﾞﾅﾃﾞ   pat head
+(＊´︶`)۶"ﾅﾃﾞﾅﾃﾞ   pat head
+ヾ(・ω・ )   pat head
+ヾ(＾∇＾*)   pat head
+ヾ(＞ω＜ )   pat head
+ヾ(╹◡╹๑)   pat head
+(p_;)＼(^^ )   pat head
+(｡-∀-)ヾ(´∀｀*)   pat head
+ヾ(・ω・*)いいこいいこ   pat head good
+(..､)ヾ(^^ )いいこいいこ   pat head good
+(..、)ヾ(^^ )ｲｲｺｲｲｺ   pat head good
+(^_^)ヾ(^^ )ｲｲｺｲｲｺ   pat head good
+(´ω`)ヾ(^^ )ｲｲｺｲｲｺ   pat head good
+(・ω・)ヾ(^^ )ｲｲｺｲｲｺ   pat head good
+(｡´･ω･)ﾉﾞ   there there pat
+( ,,´･ω･)ﾉ"   there there pat
+丶(・ω・｀) ﾖｼﾖｼ   there there pat
+( ๑´•ω•)۶"ﾖｼﾖｼ   there there pat
+( ´･-･ﾉ(´._.｀)   there there pat
+( ´･ω･)ﾉ"(･ω･` )   there there pat
+ヽ(´▽`)ﾉ   friends besties
+(ﾉ･ω･)ﾉ゛   friends besties
+（´Д｀人´Д｀）   friends besties
+(^^)人(^^)   friends besties
+ヾ(＠⌒ー⌒＠)ノ   friends besties
+(・∀・)人(・∀・)   friends besties
+（＾＾）爻（＾＾）ﾅｶﾏ   friends team
+( 'A)人('A )ﾅｶｰﾏ   friends team
+(・∀・)人(・∀・)ﾅｶｰﾏ   friends team
+('A`)人('A`)ﾅｶｰﾏ   friends team
+( ･ω･)人(･ω･ )握手   friends team
+（ ^^）／＼（^^ ）ｵﾅｶﾏ   friends team
+(^^)/(^^)   high five
+(°◇°人°◇°)   high five
+(^o^)人(^o^)   high five
+( ＾＾)人(＾＾ )   high five
+(＊´ω｀人´∀｀＊)   high five
+(▼▽▼)人(▼▽▼)   high five
+(∩_∩)   shy
+(//ω照♥   shy
+(〃ﾉдﾉ)ﾃﾚ   shy
+(ฅωฅ`)照♡   shy
+σ(*´∀｀照)   shy
+(〃∇〃)ﾃﾚﾃﾚ   shy
+(//)   embarrassed shy
+(〃∇〃)   embarrassed shy
+f^_^;   embarrassed shy
+(*´`)   embarrassed shy
+(/ω＼*)   embarrassed shy
+(⌒_⌒;)   embarrassed shy
+(〃'ω'〃)   fidget shy
+（ﾉ∪≦*）ノ   fidget shy
+(*｣´ｪ`)｣   fidget shy
+((*´д｀*))   fidget shy
+(((*´ｪ`*)))   fidget shy
+ﾓｼﾞﾓｼﾞ(｡_｡*)   fidget shy
+ꒉ:)   oops tehe
+(・ω<)   oops tehe
+(・ω≦)   oops tehe
+(・ω＜)   oops tehe
+☆(・ω<)   oops tehe
+(・・。)ゞ   oops tehe
+(๑・ω-)   oops tongue tehepero
+(๑>؂<๑)   oops tongue tehepero
+(๑•؎ •)   oops tongue tehepero
+(*ﾉ>ᴗ<)   oops tongue tehepero
+( °؎ °)   oops tongue tehepero
+(๑>◡<๑)   oops tongue tehepero
+:(-   sad
+:'(   sad
+):-   sad
+(´△｀)   sad
+(;-;)   sad
+(-_-)   sad
+(つд⊂)ｴｰﾝ   cry
+( ;ᯅ; )ｴｰﾝ   cry
+（ ´Д⊂ヽエーーン   cry
+(((((*ﾉДﾉ)えーん   cry
+(´｡つД⊂ﾟ｡｀)ぇんぇん   cry
+･ﾟﾟ(p>д<q)ﾟﾟ･えーん   cry
+(TдT)   wail cry
+(T⌓T)   wail cry
+(ノ﹏ヽ)   wail cry
+(╥_╥)   wail cry
+(╥ω╥)   wail cry
+(ΩДΩ)   wail cry
+(T△T)   burst into tears
+(ﾟｰÅ)   burst into tears
+（>﹏<）   burst into tears
+(；´Д｀)   burst into tears
+( ；∀；)   burst into tears
+（ ＴДＴ）   burst into tears
+(｡ɞ̴̶̷﹏ɞ̴̶̷｡)   teary eyes
+( ᵒ̴̶̷᷄꒳ᵒ̴̶̷᷅ )   teary eyes
+( ɵ̷̥̥᷄﹏ɵ̷̥̥᷅ )   teary eyes
+(๑o̴̶̷̥᷅﹏o̴̶̷̥᷅๑)   teary eyes
+(ˊo̴̶̷̤ ̫ o̴̶̷̤ˋ)   teary eyes
+(  ᵒ̴̶̷᷄꒳ᵒ̴̶̷᷅  )   teary eyes
+.°(ಗдಗ。)°.   happy tears
+｡°(´∩ω∩`)°｡   happy tears
+｡°(°´ω`°)°｡   happy tears
+｡ﾟ(ﾟஇωஇﾟ)ﾟ｡   happy tears
+｡ﾟ(ﾟ´∀｀ﾟ)ﾟ｡   happy tears
+｡ﾟ(ﾟ´ω`ﾟ)ﾟ｡   happy tears
+(´･･`)   dejected sad
+(・ω・`)   dejected sad
+(´._.`)   dejected sad
+(´・_・`)   dejected sad
+😞(´･･`)   dejected sad
+(´- ̯-`)   dejected sad
+(´・ω・｀)   dejected sad
+(´•ω•`)   dejected sad
+(´･_･`)   dejected sad
+(´･-･`)   dejected sad
+(´･ω･｀)   dejected sad
+(っ◞‸◟c)   dejected sad
+(◞‸◟)   dejected
+(u_u)   dejected
+(´･-･)   dejected
+(´∵)ｼｭﾝ   dejected
+(´-ω-`)   dejected
+(´・_・｀)   dejected
+(´Д｀)   down depressed
+(´-｀)   down depressed
+（´・ω・`）   down depressed
+(´-ω-｀)   down depressed
+(´-д-)-3   down depressed
+(´д｀)ﾏﾏﾝ…   down depressed
+(´д｀)   disappointed
+('A`)   disappointed
+(´･･)   disappointed
+(´••)   disappointed
+(´∵`)   disappointed
+(˘︥˘)   disappointed
+(ノД`)   lonely
+＿|￣|○   lonely
+(ﾉ_-)   lonely
+(・_・。)   lonely
+(ﾉ_-｡)   lonely
+(ﾉ_-、)   lonely
+(ノω･、)   painful hard
+(_ _。)   painful hard
+(;´д｀)   painful hard
+(´ω｀;)   painful hard
+(ノω･､`)   painful hard
+(´°‐°｀)   painful hard
+(；⌒ｏ⌒)δ   woe sigh
+δ(⌒ｏ⌒*)   woe sigh
+(*⌒ｏ⌒)δ   woe sigh
+δ(⌒ｏ⌒|||)   woe sigh
+(|||⌒ｏ⌒)δ   woe sigh
+(;´д｀)ﾄﾎﾎ…   woe sigh
+(･_･)   too bad
+(≖≖ )   too bad
+(´∩｀)   too bad
+（・▲・）   too bad
+(> <)   too bad
+(´_`)   too bad
+(>~<)   frustrated bitter
+(´;ω;｀)   frustrated bitter
+(՞т﹏т՞)   frustrated bitter
+(・ω・´;)   frustrated bitter
+( ᷄ᾥ ᷅ )   frustrated bitter
+(҂⌣̀_⌣́)   frustrated bitter
+(´ｰ`)   somber
+(´-`)   somber
+(- -)   somber
+( ´ー`)   somber
+(´- `)   somber
+(´_ゝ`)   somber
+(╬◣д◢)   angry
+(#°Д°)   angry
+(ʘ言ʘ╬)   angry
+(怒｀Д´怒)   angry
+ꐦ(≖̀д̿≖́)   angry
+(ꐦ ‾᷄꒫‾᷅ )   angry
+(¬¬)   angry pout huff
+(｀ε´)   angry pout huff
+(￣ヘ￣)   angry pout huff
+(ー_ー)   angry pout huff
+(｀-´)   angry pout huff
+(◣_◢)   angry pout huff
+ಠ╭╮ಠ   annoyed irritated
+(｀へ´)   annoyed irritated
+(눈_눈)   annoyed irritated
+( º言º)   annoyed irritated
+(#ﾟДﾟ)   annoyed irritated
+（#＾ω＾）   annoyed irritated
+(ﾟ⊿ﾟ)ｲﾗｯ   irritated
+(｀ε´)ｲﾗｯ   irritated
+(`A')ｲﾗｯ   irritated
+(#ﾟДﾟ)ｲﾗｯ   irritated
+(#ﾟ∀ﾟ)ｲﾗｯ   irritated
+(≧ヘ≦)ｲﾗｲﾗ   irritated
+ヽ(#`Д´)ﾉ┌┛   anger irritated
+(ﾉಠ益ಠ)ﾉ彡┻━┻   anger irritated
+(┛◉Д◉)┛彡┻━┻   anger irritated
+┻━┻ミ＼(≧ロ≦＼)   anger irritated
+(ノ｀□´)ノ⌒┻━┻   anger irritated
+＿|￣|○ ﾉ(#ﾟДﾟ)ﾉ   anger irritated
+(｀Д´)   angry mad
+(｀┴´)   angry mad
+(`Ａ´)   angry mad
+(-_-#)   angry mad
+(｀0´)凸   angry mad
+(=し= )   angry mad
+(￣д￣)   dissatisfied
+(￣‸￣)   dissatisfied
+(¬д¬)   dissatisfied
+(ˉ▽ˉ；)   dissatisfied
+😤(｀へ´)   dissatisfied
+💢(￣ε￣)   dissatisfied
+(￣_￣)   hmph
+(-ω-)   hmph
+(˘_˘)   hmph
+(˘︿˘)   hmph
+(・_・)   hmph
+( ･_･)   hmph
+(｀^´)   hmph huff
+(`ω´)   hmph huff
+(`-´)   hmph huff
+(งᐛ)ว   hmph huff
+(｀･ω･´)   hmph huff
+(`・ω・´)   hmph huff
+(´^｀)ﾌﾟｲ   turn away ignore
+(｀^´)ﾌﾟｲ   turn away ignore
+(｀ﾍ´)ﾌﾟｲ   turn away ignore
+(´^｀*)ﾌﾟｲ   turn away ignore
+(-ω- )ﾌﾟｲ   turn away ignore
+(｀ﾍ´＠)ﾌﾟｲ   turn away ignore
+(ಡ᎔ಡ)   sulk
+(¬⤙¬ )   sulk
+(｡･-･)   sulk
+૮ ♡ﻌ♡ა   sulk
+(˶˃⤙˂˶)   sulk
+(｡•ˇ‸ˇ•｡)   sulk
+(σ･ิω･ิ)σ   tsundere pout
+(・ω・)σツンツン   tsundere pout
+(^ω^)σツンツン   tsundere pout
+(=ω=)σツンツン   tsundere pout
+(◕ω◕)σツンツン   tsundere pout
+(σ･ω･)σツンツン   tsundere pout
+(¬¬)ﾁｯ   tsk annoyed
+(・д・)ﾁｯ   tsk annoyed
+(￣ヘ￣)ﾁｯ   tsk annoyed
+(¬_¬)ﾁｯ   tsk annoyed
+(￣д￣)ﾁｯ   tsk annoyed
+(−_−)ﾁｯ   tsk annoyed
+(ノ｀Д´)ノ彡┻━┻   flip table rage
+(┛ಸ_ಸ)┛彡┻━┻   flip table rage
+(ノ｀´）ノ ~┻━┻   flip table rage
+┻━┻ミ＼(≧ﾛ≦＼)   flip table rage
+(ノ｀m´)ノ︵┻━┻   flip table rage
+(╯°□°）╯︵ ┻━┻   flip table rage
+(☆⦿〒⦿☆)ﾗｯﾌﾟ   rampage
+（╬☉д⊙)＝◯)`дﾟ)・;'   rampage
+(((ヽ(o`д´o*)ﾉｼ)))ｼﾞﾀﾊﾞﾀ   rampage
+ε٩(°Д°)۶з   rampage
+ヾ(:3ﾉｼヾ)ﾉｼ   rampage
+(੭ु꒪꒫꒪)੭ु⁾⁾   rampage
+o(><)o   tantrum
+o(；>△<)o   tantrum
+o(><)oｼﾞﾀﾊﾞﾀ   tantrum
+o(>_< )( >_<)o   tantrum
+Σ(ﾟДﾟ；≡；ﾟдﾟ)じたばた   tantrum
+ヾ( •́д•̀ ;)ﾉじたばた   tantrum
+(￣^￣)ぐぬぬ   grr frustrated
+( •᷄ὤ•᷅)   grr frustrated
+( >д<)ぐぬぬ   grr frustrated
+:( ;ᾥ; ):   grr frustrated
+( ･᷄ὢ･᷅ )   grr frustrated
+(´Д`)ぐぬぬ…   grr frustrated
+(╬￣皿￣)   threaten intimidate
+(「・ω・)「   threaten intimidate
+(」ﾟヘﾟ)」   threaten intimidate
+ฅ(`ꈊ´ฅ)ｼｬｰ   threaten intimidate
+(ฅ`Д´ฅ)ｼｬｰ   threaten intimidate
+ヽ(｀Д´)ﾉ 💢   threaten intimidate
+o(炎_炎)o   fired up burning
+p(･ω･)q   fired up burning
+(炎∇炎)メラメラ   fired up burning
+(炎_炎)めらめら   fired up burning
+メラ(炎∀炎)メラ   fired up burning
+(炎▽炎)メラメラ   fired up burning
+(¬‿¬)💫   evil face
+(¬ω¬)🌟   evil face
+(¬‿¬)💡   evil face
+(`∀´)Ψ👹   evil face
+(｀∇´)Ψ🔱   evil face
+ψ(｀∇´)ψ💀   evil face
+(◞‸◟)呪   curse
+( ˘-˘)呪   curse
+๛ก(･ὢ･ก)   curse
+(￣ω￣)呪いだ…   curse
+⌒(._.)⌒呪い   curse
+๛ก( ᯣωᯣก)   curse
+Σ(゜ω゜)   surprised
+Σ(°Д°)   surprised
+∑(°∀°)   surprised
+Σ(⊙ω⊙)   surprised
+Σ(ﾟﾛﾟ;)   surprised
+Σ( °ω° )   surprised
+！Σ（￣□￣;）   shocked
+ショック(；°°)   shocked
+（￣□￣；）ガーン   shocked
+Σ(￣ロ￣lll)   shocked
+（￣Д￣;) ガーン   shocked
+！Σ（￣ロ￣lll)   shocked
+(ㆆ⌓ㆆ)   shocked devastated
+( ꒪Д꒪)   shocked devastated
+(||๐\_๐)   shocked devastated
+∑ᔪ(°ᐤ°;)ᔭ   shocked devastated
+(lll≡3≡)ガァン…   shocked devastated
+m【´；ω；｀】mガーン   shocked devastated
+°-°   shocked faint
+ㅇ_ㅇ   shocked faint
+(°°)   shocked faint
+O__O   shocked faint
+(°_°)   shocked faint
+(ºωº)   shocked faint
+(； ･`д･´)   what?!
+(ﾟﾛﾟ 屮 )屮   what?!
+( °ω°)ﾅﾝﾀﾞﾄ   what?!
+(°д°)ﾅﾝﾀﾞﾄ!?   what?!
+(゜o゜)ﾅﾝﾀﾞﾄ!?   what?!
+(°д°)ﾅﾝﾀﾞﾄ?!   what?!
+(˙˙)   dumbfounded blank
+(°o°)   dumbfounded blank
+( □ )   dumbfounded blank
+( ˍ )   dumbfounded blank
+( ゚д゚)   dumbfounded blank
+( ゚o゚)   dumbfounded blank
+(￢_￢)   cringe
+(´｀)え   cringe
+(˙~˙)   cringe
+(˘︹˘)   cringe
+(˙•̮˙)   cringe
+( ´△｀)   cringe
+ಠoಠ   gross disgusted
+(ఠൠఠ)   gross disgusted
+ʕʘ‿ʘʔ   gross disgusted
+(╬ಠ益ಠ)   gross disgusted
+(◞≼◎≽◟)   gross disgusted
+( ´థ౪థ)   gross disgusted
+Σ(;ﾟ;   scary
+(ﾟÅﾟ;)   scary
+(ﾟ?ﾟ;)   scary
+(／。＼)怖   scary
+(ﾟДﾟ;)   scary
+(;´∀｀)   scary
+(⊙_☉)   scared
+(°⌓°;)   scared
+（´皿｀；）   scared
+) ゜o゜(   scared
+(´；ω；｀)   scared
+(´；Д；`)   scared
+(•﹏•)   trembling scared
+(｡ >﹏<｡)   trembling scared
+:(｡*ω*｡):   trembling scared
+(｡•́﹏•̀｡)   trembling scared
+(( '﹏' ))   trembling scared
+:(^. ̫ .^ ):   trembling scared
+(゜Д゜)   scream
+(ﾟ皿ﾟ)   scream
+(°Д°)   scream
+(ﾟoﾟ)   scream
+(ﾟ口ﾟ)   scream
+(ﾟдﾟ)   scream
+(｀д´)   danger
+(；´Д`)   danger
+(◎_◎;)   danger
+(-_-;)   danger
+(;´д`)   danger
+(´д`;)   danger
+(ᯅ̈)   yikes
+(⌓̈)   yikes
+(꒪⌓꒪)   yikes
+(°ཫ°)   yikes
+(゜ロ゜)   yikes
+(；￣Д￣)   yikes
+(×_×)   faint pass out
+○|￣|_   faint pass out
+＿○／|＿   faint pass out
+＿|￣|●   faint pass out
+○|￣|＿   faint pass out
+＿|＿|○   faint pass out
+(ᯅ̈ )   flustered panic
+(>ω<)   flustered panic
+(／_＼)   flustered panic
+( ꒪⌓꒪)   flustered panic
+(；´∀｀)   flustered panic
+(′︿‵｡)   flustered panic
+(;ﾟдﾟ)   panic hurry
+(;´Д`)   panic hurry
+(°∀°ⅲ)   panic hurry
+(;^ω^)   panic hurry
+(^。^;)   panic hurry
+｜￣ω￣A；   panic hurry
+(ﾟOﾟ;   panic hurry
+(；ﾟ∀ﾟ)   panic hurry
+(´Д`ι)   panic hurry
+(；・∀・)   panic hurry
+(;´ρ`)   panic hurry
+(ﾉω<;)   panic hurry
+^_^;   sweat nervous
+(^_^;   sweat nervous
+(｡ω｡；)   sweat nervous
+(°-°；)   sweat nervous
+(°ﾛ°٥)   sweat nervous
+(´ー｀；)   sweat nervous
+ᵕ́⍛ᵕ̀   sweat
+(¯∇¯٥)   sweat
+('-'`;)   sweat
+Σ(ﾟдﾟ；)   sweat
+(´◦ω◦｀)   sweat
+(⌒-⌒; )   sweat
+(;ﾟдﾟ)ｺﾞｸﾘ   gulp nervous
+(ﾟＡﾟ;)ｺﾞｸﾘ   gulp nervous
+(;ﾟдﾟ)ｺﾞｸﾘ…   gulp nervous
+(；・∀・)ｺﾞｸﾝ…   gulp nervous
+(;°ロ°)ｺﾞｸﾘ…   gulp nervous
+(;ﾟДﾟ)ｺﾞｸﾘ…   gulp nervous
+(；ﾟДﾟ)   nervous
+(@_@;)   nervous
+(；・ω・)   nervous
+(；￣□￣)   nervous
+(；・_・)   nervous
+(；￣ω￣)   nervous
+(._.)   worry
+(∩︵∩)   worry
+(｡_｡)   worry
+(・ω・｀)   worry
+(-ω-;)   worry
+(･ω･`)   worry
+(゜-゜)   worried uneasy
+(；∀；)   worried uneasy
+(；一_一)   worried uneasy
+(；´ρ`)   worried uneasy
+(；´-`)   worried uneasy
+(´⌒`;)   worried uneasy
+(・・?)   confused idk
+(￣？￣)   confused idk
+(？_？)   confused idk
+(・Д・)   confused idk
+(・・;)   confused idk
+(･_･;   confused idk
+(？)   question confused
+(・・？)   question confused
+(･_･?)   question confused
+(ﾟヘﾟ)？   question confused
+~(・・？）   question confused
+(‥ )ﾝ?   question confused
+(?_?)   question confused
+(・_?)   question confused
+(・?・)   question confused
+(???)   question confused
+(__)?   question confused
+(??)？   question confused
+(>﹏<)   perplexed confused
+(´д`)   perplexed confused
+(´Д`)   perplexed confused
+(；´д`)   perplexed confused
+(；-_-)   perplexed confused
+(；^_^)   perplexed confused
+(゜゜)？   head tilt confused
+(・ω・?)   head tilt confused
+(・_・?)   head tilt confused
+(・◇・?)   head tilt confused
+(・へ・?)   head tilt confused
+(・д・?)   head tilt confused
+(ㆆ_ㆆ)   troubled
+(^_^;)   troubled
+(｡ŏ﹏ŏ)   troubled
+(｡ŏ_ŏ)   troubled
+(-ω-；)   troubled
+(>_<")   troubled
+（￣ﾍ￣）ｳｰﾝ   troubled ponder
+(-＿-)ｳｰﾑ   troubled ponder
+( -᷄﹏-᷅ )   troubled ponder
+(-_-;)ｳｰﾝ   troubled ponder
+(-ω-;)ｳｰﾝ   troubled ponder
+(~ﾍ~;)ｳｰﾝ   troubled ponder
+(ーー゛)   think thinking
+(ー_ーゞ   think thinking
+(◔ૂ◔)   think thinking
+(mm*)   think thinking
+(･-･)   think thinking
+（◎ー◎；）   think thinking
+\(^o^)/   idea lightbulb
+(*ﾟ▽ﾟ)ﾉ   idea lightbulb
+(ﾉ≧∀≦)ﾉ   idea lightbulb
+(*ﾟ∇ﾟ)ﾉ   idea lightbulb
+(ﾉ^o^)ﾉ   idea lightbulb
+(ﾉ≧ڡ≦)ﾉ   idea lightbulb
+( º▽º )💡   i see
+Σʕ✧ﻌ✧ ʔ💡   i see
+( ˙ỏ˙ )💡   i see
+👍なるほど(・・)   i see
+✨なるほど(՞˙꒳˙՞)   i see
+✍️(･∀･*)なるほど   i see
+(´・ω・`)ふむ   i see nod
+(๑˙꒳˙๑)ﾌﾑﾌﾑ   i see nod
+ﾌﾑ((¯ω¯*))ﾌﾑ   i see nod
+φ(･ω･｀)ﾌﾑﾌﾑ…   i see nod
+ﾌﾑﾌﾑ((￣ ￣*))   i see nod
+( •ω• )φﾌﾑﾌﾑ   i see nod
+(≧∀≦ゞ   understand got it
+(-ω-ゞ   understand got it
+(≧ω≦)ゞ   understand got it
+|▼皿▼)b   understand got it
+(・∀-d)   understand got it
+∠(｀∪´)   understand got it
+(｀-ω-´)ｳﾑ   nod
+(´ー｀*)ｳﾝｳﾝ   nod
+(*ˊᗜˋ)そぅそぅ   nod
+(｀・ω・´)ｳﾑ!   nod
+(*ˊᗜˋ)♡そぅそぅ   nod
+(´-ω-`)ｳﾑｳﾑ   nod
+(´~`)   hmm
+(ー_ー;)   hmm
+(；￣ー￣)   hmm
+( ´-` )   hmm
+(¯ﾍ¯)ｳｰﾝ   hmm
+(-ω-;)うーん   hmm
+( ›＿‹ )   facepalm head in hands
+(っ- ‸ – ς)   facepalm head in hands
+(｡•́ – •̀｡)   facepalm head in hands
+(；ᐛ )💦   facepalm head in hands
+(ᯅ̈ )💭   facepalm head in hands
+(×_×)⌒☆   facepalm head in hands
+(^^;)   awkward smile
+(´∀｀;)   awkward smile
+(￣▽￣;)   awkward smile
+(´ヮ｀;)   awkward smile
+(´▽`;)   awkward smile
+(；^ω^)   awkward smile
+(∵)   straight face
+(・・)   straight face
+(=_=)   straight face
+(ㅎ_ㅎ)   straight face
+(　ﾟдﾟ)   straight face
+( '-' )   straight face
+(￢￢)   side eye
+(￣￣)   side eye
+(↼↼)   side eye
+(¬¬ )   side eye
+(¬､¬)   side eye
+(¬▂¬)   side eye
+ಠ_ಠじー   stare
+(・ω・)ｼﾞｰ   stare
+(｀д´)ｼﾞｰ   stare
+(｀Д´)ｼﾞｰ   stare
+(｀o´)ｼﾞｰ   stare
+(⚭-⚭ )ｼﾞｰ   stare
+(　= =)💭   distant stare
+(　= =)💧   distant stare
+(　= =)🌀   distant stare
+(　= =)💨   distant stare
+(　= =)🕊   distant stare
+(　= =)🪐   distant stare
+(・・ )   exasperated
+(・ε・)   exasperated
+(・A・)   exasperated
+(；￣Д￣）   exasperated
+(￣□￣;)   exasperated
+(￣ー￣?)   exasperated
+( -"-)   good grief sigh
+(ー_ー )   good grief sigh
+┐(´д｀)┌   good grief sigh
+┐(´∀｀)┌   good grief sigh
+(´°‐°`)   good grief sigh
+(-∀-｀;)   good grief sigh
+(´Д`)=3   sigh
+ε-(´∀｀)   sigh
+(´Д｀)=3   sigh
+ε-(´o｀)   sigh
+ε=(-ω-)   sigh
+ε-(´･｀)   sigh
+(≖‿≖)ﾆﾔﾆﾔ   smirk grin
+(・∀・)ﾆﾔﾆﾔ   smirk grin
+ﾆﾔ(･∀･)ﾆﾔ   smirk grin
+(ಡωಡ)ﾆﾔﾆﾔ   smirk grin
+(„ಡωಡ„)ﾆﾔ   smirk grin
+( ´´∀´` )   smirk grin
+(⌒ω⌒)   smirk satisfied
+(☆∀☆)ﾆﾔﾘ   smirk satisfied
+(￣ー￣)ﾆﾔﾘ   smirk satisfied
+（・∀・）ﾆｬﾆｬ   smirk satisfied
+(▼∀▼)ﾆﾔﾘｯ   smirk satisfied
+(☆>⊇<)ﾆﾔﾘ   smirk satisfied
+(´ー｀)ﾌｯ   creepy grin
+(´ω｀)ﾆﾔｯ   creepy grin
+(´∀｀)ﾌｯ…   creepy grin
+(✧≖‿ゝ≖)ﾌｯ   creepy grin
+(￣¬￣)ｸｸｸ…   creepy grin
+( ˘ω˘ )ｸｸｸ…   creepy grin
+ಠﭛಠ   creepy laugh
+(☼Д☼)   creepy laugh
+(｀ー´)   creepy laugh
+(￣﹃￣)   creepy laugh
+(｀∀´)Ψ   creepy laugh
+(｀Д´*)   creepy laugh
+|ω･)   sneaky
+|д･)   sneaky
+|ω-)   sneaky
+|∀･)   sneaky
+|･ω･)   sneaky
+(｡･ω･)   sneaky
+┃˙꒳˙)こそこそ   sneaking
+I˙꒳˙)こそこそ✨   sneaking
+│'ω')ﾁﾗﾘ🎵   sneaking
+|･ω･`)こそこそ♡   sneaking
+|⌔•..)ﾁﾗｯ🌺   sneaking
+*･ᴗ･`)੭⁾⁾こそこそ   sneaking
+|彡ｺｯｿﾘ   secret shh
+(≧ｍ≦)ﾋﾐﾂ   secret shh
+(ﾉД)ﾉﾋｿﾋｿ   secret shh
+|ﾉo･)ﾋｿﾋｿ   secret shh
+(¬‿¬)ﾋｿﾋｿ   secret shh
+|ﾉo･)ｺｯｿﾘ   secret shh
+|･`)   whisper gossip
+|ω＇)   whisper gossip
+┻┳|Ｊ   whisper gossip
+┻┳|_∧   whisper gossip
+┳┻|⊂ﾉ   whisper gossip
+|ω・`)つ   whisper gossip
+^_^︎   taunt
+(^-^)   taunt
+(＾－＾)   taunt
+(⊙ꇴ⊙)   taunt
+（°∀°）   taunt
+(･ω･ﾉﾉ   taunt
+ㄟ(･ε･)ㄏ   play dumb innocent
+( ³з³)ﾉ   play dumb innocent
+ㄟ(―∀―(ㄏ   play dumb innocent
+( ﾟ 3ﾟ)～♪   play dumb innocent
+🤷( ꇐ₃ꇐ )   play dumb innocent
+😙( ￣3￣)～♪   play dumb innocent
+（ ᑒ ）   funny face derp
+( ⌳̈ )   funny face derp
+( ՞ਊ ՞)   funny face derp
+( ◠‿◠ )   funny face derp
+(๑ ิټ ิ)   funny face derp
+( ﾟ,_ゝﾟ)   funny face derp
+(´□｀)   tired
+(´ヘ｀；)   tired
+(´-｀；)   tired
+(´□｀；)   tired
+(´Д｀；)   tired
+(´-д-｀)   tired
+‎・ࡇ・   exhausted tired
+（=_=）   exhausted tired
+~(_~)   exhausted tired
+(_´ω｀)   exhausted tired
+(ヽ´ω`)   exhausted tired
+(ᵕ⌓ᵕ̤)   exhausted tired
+(ｘ_ｘ)   exhausted limp tired
+(×_×;）   exhausted limp tired
+_(´ω`)_   exhausted limp tired
+(´×ω×`)   exhausted limp tired
+(´ω｀」∠)   exhausted limp tired
+0(:3 )～   exhausted limp tired
+›´ω`‹   haggard
+(›´ω`‹)   haggard
+(›´ω`‹ )   haggard
+( ›´ω`‹ )   haggard
+(; ›´ω`‹)ﾉ   haggard
+(›´ω`‹ )ひもじい   haggard
+°=°）   dying exhausted
+(:ω」)   dying exhausted
+(_ _)   dying exhausted
+(×ω×)   dying exhausted
+(＿ ＿)   dying exhausted
+(×o×)   dying exhausted
+(^q^)   dead dying
+(x_x)   dead dying
+(×﹏×)   dead dying
+(-∧-)   dead dying
+＼(_ _)   dead dying
+_(:3」)＿   dead dying
+\(＾o＾)/   it's over doomed
+/(^o^)\   it's over doomed
+\( ᐛ )/   it's over doomed
+\(˙◁˙)/   it's over doomed
+\(^-^)/   it's over doomed
+\(＾ｏ＾)/   it's over doomed
+( ˘ᵕ˘ )zz   sleepy tired
+ﾟo｡(-ω-人)   sleepy tired
+( ˘ω˘ )zzz   sleepy tired
+( ˘ᾥ˘)ｳﾄｳﾄ   sleepy tired
+(ㅎωㅎ*)ｳﾄｳﾄ   sleepy tired
+ｩﾄ(´σд-｡)ｩﾄ   sleepy tired
+(´O｀)   yawn
+(´ρ｀)   yawn
+(~0~)   yawn
+(｀〇´)   yawn
+(´〇｀)   yawn
+(´○`)   yawn
+(-ω-)zzz   sleep
+🌟(。-ω-)zzz   sleep
+⭐( ˘ω˘ )zzz   sleep
+(ㅅ˘˘)zzZzzz   sleep
+🌙(*˘ ˘*)寝るね   sleep
+( ｡- -｡)zzZZ   sleep
+(´ω｀)ｽﾔｧ   sleeping
+('､3_ヽ)_ｽﾔｧ   sleeping
+( ˘ω˘ ) ｽﾔｧ…   sleeping
+( ˘ω˘)ｽ…ｽﾔｧ…   sleeping
+(´-ω-`)ｽﾔｧ...   sleeping
+_(ˇωˇ」∠)_ ｽﾔｧ…   sleeping
+(:3[___]   bed sleep
+(¦3[___]   bed sleep
+('､3[___]   bed sleep
+三(:3[___]   bed sleep
+ｼｭｯ =͟͟͞͞ (¦3[___]   bed sleep
+😴(:3[___]💤   bed sleep
+(●ＵωU)   good night
+( ˘-˘ )   good night
+( ˘꒳ ˘)   good night
+( ˇωˇ )   good night
+(´-﹃-`)   good night
+( ֊ ̫ ֊ )   good night
+(　_Ü)_   roll lying lazy
+(:3_ヽ)_   roll lying lazy
+(:3っ)3_   roll lying lazy
+(´xωx｀)   roll lying lazy
+(✖ㅂ✖๑ )   roll lying lazy
+(o_△_)o   roll lying lazy
+_(:3」∠)_   lazing rolling
+_(:з」∠)_   lazing rolling
+_(:D」∠)_   lazing rolling
+_(:3」z)_   lazing rolling
+_(┐「ε:)_   lazing rolling
+('､3_ヽ)＿   lazing rolling
+｣∠⎞_   melt melting
+⎝｡⌓°⎞   melt melting
+(；；꒷꒦⎞   melt melting
+( ՞⌓°⎞   melt melting
+(:3っ)っ   melt melting
+(:3っ)∋   melt melting
+(￣^￣)   ugh lazy bothersome
+(￣ェ￣)   ugh lazy bothersome
+(＃-△-)   ugh lazy bothersome
+(；￣д￣)   ugh lazy bothersome
+ヾ(｡´囗｀)ﾉ   ugh lazy bothersome
+ヽ(○´3`)ﾉ ﾌｯ   ugh lazy bothersome
+(×_×)ﾑﾘ   impossible no way
+ﾑﾘｯ(乂ω′)   impossible no way
+('ω'乂)ﾑﾘｰ   impossible no way
+(乂'ω')ﾑﾘｯ   impossible no way
+(ヾﾉ ᐛ )ﾑﾘ   impossible no way
+(/ω＼*)ﾑﾘｯ   impossible no way
+(・ω・)ノ   hello greeting
+(^_^)ノ   hello greeting
+(・ε・)ノ   hello greeting
+ヽ(´▽｀)ノ   hello greeting
+(ﾉ´∀`)ﾉ   hello greeting
+(＠＾＾＠)/   hello greeting
+おはー(´・ω・)ノ   good morning
+おっはー(ﾉ´▽`)ﾉ   good morning
+おはよんヽ(´▽`)/   good morning
+おはよー٩(๑>∀<๑)۶   good morning
+おはよ～ん(ﾉ´∀｀*)ﾉ   good morning
+おっはよー♪(๑ᴖ◡ᴖ๑)♪   good morning
+(^o^)丿   good evening
+(･∀･)ﾉ   good evening
+(^_^)/   good evening
+( ﾟ▽ﾟ)/   good evening
+(´･∀･`)ﾉ   good evening
+(o'ω`o)ﾉ   good evening
+(⌒∇⌒)ﾉ   wave
+( ･ω･)ノ   wave
+(´∀｀)ノシ   wave
+ヾ(*´罒`*)   wave
+(*^_^*)ノ   wave
+( ´ ▽ ` )ノ   wave
+(＾ω＾)ノ   bye
+(°▽°)/   bye
+(◕‿◕)ノ   bye
+(･_･)ノ   bye
+(・∀・)ノ   bye
+(￣ー￣)ノ   bye
+ˊᵕˋ)੭   goodbye
+＼(＾▽＾)／   goodbye
+👋ヾ(≧∇≦)ゞ   goodbye
+👋(ﾉ≧∀≦)ﾉ   goodbye
+👋ヽ(´▽`)/   goodbye
+👋(ﾉ^∇^)ﾉ   goodbye
+(^0^)/   see you bye
+ヾ(＾∇＾)   see you bye
+(´▽`)ノ   see you bye
+(*･ω･)ﾉ   see you bye
+(^-^)ノシ   see you bye
+(・ω・)ﾉｼ   see you bye
+行ってきます (^^)/   i'm off
+(*´ω｀)っ行ってきます   i'm off
+行ってきます(｡･ω･｡)ゞ   i'm off
+ｲｯﾃｷﾏｰｽ (•ө•)♡   i'm off
+(｡・ω・)ﾉﾞ ｲｯﾃｷﾏｽ   i'm off
+(｡･ω･)ﾉﾞ ｲｯﾃｷﾏ-ｽ♪   i'm off
+(*^ ^)۶~♪   see you off
+ヾ(´▽｀*)ﾉいってら～♪   see you off
+(*ˊᗜˋ)ﾉﾞｲｯﾃﾗｯｼｬ〜ｲꕤ   see you off
+行ってらっしゃい(*´ ˘ `)۶♪   see you off
+(*˘︶˘*)ﾉﾞいってらっしゃい！   see you off
+(｡･ω･)ﾉﾞ ｲｯﾃﾗｯｼｬーｨ♪   see you off
+(・∀・)ﾉ ただいま   i'm home
+(・ω<)ﾉ ただいま☆   i'm home
+(･∀･)ﾉｼ ただいま   i'm home
+(ﾉ･o･)ﾉ ただいま   i'm home
+ヾ(＾∇＾) ただいま～   i'm home
+ヽ(･ω･ゞ) ただいま   i'm home
+(･∀･)ﾉ ｵｶｴﾘ   welcome back
+(´ω｀)ﾉ ｵｶｴﾘ～   welcome back
+ヽ(・ω・)/ ｵｶｴﾘ   welcome back
+ヽ(´▽｀)ﾉ おかえり♪   welcome back
+(´･ω･`)ﾉ おかえり   welcome back
+(´∀｀)ノ ｵｶｴﾘ～♪   welcome back
+ლ(╹◡╹ლ)   come here
+ლ(^o^ლ)   come here
+ლ(･ิω･ิლ)   come here
+ლ(´∀`ლ)おいで   come here
+(ﾉ´ヮ`)ノおいで   come here
+(´っ･ω･)っおいで   come here
+(⊙⊙)   look at me
+(゜д゜)   look at me
+(－_－)   look at me
+( ﾟдﾟ)   look at me
+( ﾟДﾟ)   look at me
+(ﾟAﾟ )   look at me
+(・∀・)b   hey
+(人д〃)ネッ   hey
+(d´∀｀)b   hey
+(´・ω・)ﾈｰ   hey
+(´- `)ネー   hey
+(b´ー`)ネb   hey
+(・Ｏ・)」   call calling
+(」°ﾛ°)｣   call calling
+(･｣ｏ･)｣   call calling
+(^|0|^)   call calling
+(*￣o￣)ゝ   call calling
+(oﾟ◇ﾟ)ゝ   call calling
+よろしくm(._.)m   nice to meet you
+（ ＾ω＾）よろしくだお   nice to meet you
+(´･ω･`)ﾉﾖﾛｼｸ   nice to meet you
+(｀・ω・´)ゞﾖﾛｼｸ   nice to meet you
+( ｀・∀・´)ﾉﾖﾛｼｸ！   nice to meet you
+(*´∀｀)ﾉ よろしくね♪   nice to meet you
+(人▽〃)ありがとう   thanks
+( ´ᵕ`* )‪‪❤︎   thanks
+(*´ｰ`人)ｱﾘｶﾞﾄ   thanks
+ありがとです(〃∇〃)ゞ   thanks
+ありがとう(>᎑<`๑)♡   thanks
+(人´∀`)ｱﾘｶﾞﾄｰ♪   thanks
+(￣人￣)   thanks
+(-人-)   thanks
+(＾人＾)   thanks
+(；人；)   thanks
+(￣十￣)   thanks
+m(__)m   thanks
+あざす！┏○))   thanks thx
+あざーす( 'ω')   thanks thx
+( 'ω')ｱｻﾞｯｽ   thanks thx
+(・∀・)ﾉぁざーすっ♪   thanks thx
+(・∀・)ﾉｱｻﾞｰｽ♪   thanks thx
+(´∀｀)ゞぁざーすっ♪   thanks thx
+(｡>д人)   sorry
+(ฅ>ㅅ<ฅ)   sorry
+(｡-ㅅ-｡)   sorry
+(o´д人))   sorry
+(人ω<`;)   sorry
+(*_ _)՞՞   sorry
+_no   apologize sorry
+(:D)|￣|＿   apologize sorry
+○|＼|_ )))   apologize sorry
+＿○／|＿ 土下座   apologize sorry
+＿|＼○＿ ｽﾞｻｰ   apologize sorry
+○|￣|_=3 ﾌﾟｯ   apologize sorry
+(*_ _)   sorry apologize
+_(。｡)_   sorry apologize
+( ›‹　)   sorry apologize
+(/. \)   sorry apologize
+(ó﹏ò｡)   sorry apologize
+(/. .)   sorry apologize
+(_ _；)   excuse me sorry
+(._.)ゞ   excuse me sorry
+(-.-)ゞ   excuse me sorry
+<(_ _)>   excuse me sorry
+m(._.)m   excuse me sorry
+m(_ _;m   excuse me sorry
+_|￣|○   grovel sorry
+_|\○_   grovel sorry
+(o_ _)o   grovel sorry
+_(._.)_   grovel sorry
+(、._. )、   grovel sorry
+(ﾉ_ _)ﾉ♡   grovel sorry
+(礼)   bow
+(__)ﾉ   bow
+（＿ ＿）   bow
+( _ _)   bow
+（ ・◡・）   bow
+( ._.)   bow
+(¯人¯)   please
+(T人T)   please
+(>ㅅ<)   please
+(ㅅ•᎑•)   please
+(ㅅ´³`)   please
+(*-ω人)   please
+(^人^)   pray please
+(´人`)   pray please
+(人･ω･)   pray please
+(人･∀･)   pray please
+(人゜∀゜)   pray please
+(人･o･)   pray please
+(*人*)   pray
+(･_･人)   pray
+(*˘︶˘人)   pray
+(。-人-。)   pray
+(*・人・*)   pray
+(人▽〃)   pray
+(-人-)🙏✨   pray
+🙏(˘人˘)†   pray
+(-人-)🌙✨   pray
+(-人-)🙏💫   pray
+(-人-)🌸なむ〜   pray
+🙏(人˘ω˘)🙏   pray
+(っ´ω`)っどーぞ   here you go
+(｢･ω･)｢どーぞ♪   here you go
+( ･∀･)つﾄﾞｿﾞｰ   here you go
+ﾄﾞｩｿﾞ(ｏ'∀')っ   here you go
+( ｡･ω･)っﾄﾞｳｿﾞ   here you go
+(∩´｡•ω•)⊃ﾄﾞｿﾞｰ   here you go
+(ōᆺō)ﾉ   give gift
+( ﾟдﾟ)ﾉ   give gift
+( ･∀･)つ   give gift
+(´・ω・)つ   give gift
+(っ･ω･)っ   give gift
+c(°-°c)   give gift
+(｡･ω･)ﾉ   give hand over
+(っ´∀｀)っ   give hand over
+(*´∀｀)っ   give hand over
+(ﾉ･ω･)ﾉ   give hand over
+( ´･ω･`)つ   give hand over
+(⊃_ ̫ _)⊃   give hand over
+(･･ゞ   salute
+(￣^￣)ゞ   salute
+∠(￣◇￣)   salute
+(°Д°)ゞ   salute
+(･o･)ゞ   salute
+(≧д≦)ゞ   salute
+( ◜ᴗ◝)   good work
+(¦3[▓▓]   good work
+(:3 」∠)_   good work
+乙ヾ(¯∇￣๑)   good work
+( ´・x・)っ旦~   good work
+ε=(lll-ω-)   good work
+👏(ﾉ≧∀≦)ﾉ   well done
+✨(｡•̀ᴗ-)✧✨   well done
+💪(•̀o•́)ง   well done
+✨ヾ(≧▽≦*)o✨   well done
+💯(๑˃̵ᴗ˂̵)و   well done
+🏆(*´ω`*)🏆   well done
+(^^)b   good job
+(＾＾)b   good job
+(・ω・)b   good job
+(￣ー￣)b   good job
+d(-_^)   good job
+(b･ω･)b   good job
+(・∀・)ｲｲﾈ!   like good thumbs up
+(・∀・)ｲｲﾈ!!   like good thumbs up
+(⁎•ᴗ‹｡)ｲｲﾈ   like good thumbs up
+(ΦωΦ)ｲｲﾈ!!   like good thumbs up
+(♡∀♡)ｲｲﾈ!!   like good thumbs up
+(*･∀･)ｲｲﾈ!   like good thumbs up
+(っ ᐛ )っ ok   ok
+(๑•ㅂ•)و ok❢   ok
+✨(๑ᵔ⤙ᵔ๑) ok   ok
+💕(•ө•)♡ ok   ok
+(｡•ᴗ•｡)♡ ok   ok
+✿(｡◕ᴗ◕｡) ok   ok
+はーい(´∀`∩   yes here raise hand
+´ω`)ﾉ はーい   yes here raise hand
+(*˙︶˙*)ﾉﾞ   yes here raise hand
+(＊･ω･)/ﾊｰｲ   yes here raise hand
+ヾ(o´▽`)ﾉ ﾊ   yes here raise hand
+はーい(*´º`)/   yes here raise hand
+(´ω｀)ﾉ   raise hand
+(￣∇￣)ノ   raise hand
+(⌒ω⌒)ノ   raise hand
+(=ﾟωﾟ)ﾉ   raise hand
+( ･ω･)ﾉ   raise hand
+(｡-ω-)ﾉ   raise hand
+(ーー;)   no nope
+('ω'乂)   no nope
+(>.<)乂   no nope
+(≧Д≦)ﾉ   no nope
+(♯｀∧´)   no nope
+(＃｀Д´)   no nope
+σﾟﾛﾟ)σ   exactly agree
+(´ー`)σ   exactly agree
+( ᐛ )σ   exactly agree
+(σ･ω･)σ   exactly agree
+(σ≧∀≦)σ   exactly agree
+(σ･∀･)σ   exactly agree
+(˘︿˘ )お大事にね   get well
+⊂( ˘ω˘ )⊃💚   get well
+( ´ᐛ)ｵﾀﾞｲｼﾞﾆ   get well
+(•̀ᴗ•́)お大事にね   get well
+ヾ(´｡••｡)ﾉ(><)   get well
+(˘•̥ω•̥˘)お大事に…   get well
+o(>∀<*)oおめでとー   congratulations
+(･ω･ﾉﾉ"お☆め☆で☆と   congratulations
+ヽ(*´∀`)ﾉｵﾒﾃﾞﾄ─ｯ♪   congratulations
+ヾ(*~∀~*)ゞ ｵﾒﾃﾞﾄｫｰ   congratulations
+(≧o≦)ﾉ~''オメデトでちゅ♪   congratulations
+\(*´ ꒳`*)/ｵﾒﾃﾞﾄ─ｯ♪   congratulations
+✨(◕‿◕✿)⛑   party celebrate popper
+(＾o＾)ﾉ🎇   party celebrate popper
+(≧∇≦)ノ💥   party celebrate popper
+(ﾟ∀ﾟ)ノ⛑✨   party celebrate popper
+🎆(ゝω・)ノ   party celebrate popper
+🎇(⌒▽⌒)ノ   party celebrate popper
+(￣∇￣ﾉﾉ"   applause clap
+(･ω･ﾉﾉﾞ   applause clap
+ヽ(･ω･)ﾉ   applause clap
+(ﾉ´∀｀)ﾉ   applause clap
+ヽ(´∀｀)ﾉ   applause clap
+( ﾟ∀ﾟﾉﾉﾞ   applause clap
+(・∀・)ﾊﾟﾁ   clap
+(´∀｀)ﾊﾟﾁ   clap
+(^o^)ﾊﾟﾁ   clap
+(^▽^)ﾊﾟﾁ   clap
+(≧▽≦)ﾊﾟﾁ   clap
+(ﾟ∀ﾟ)ﾊﾟﾁ   clap
+＼(^o^)／フレーフレー   cheer go
+ヽ(@^o^@)ﾉ ﾌﾚｰﾌﾚｰ   cheer go
+📣ヾ(^o^)ノ ﾌﾚｰﾌﾚｰ   cheer go
+~~＼(´μ｀｡)／~~ ﾌﾚｰ   cheer go
+(ﾉ*>□<)ﾉ｛フレーフレー〕   cheer go
+(っ`・ω・´)っフレーフレー!!   cheer go
+٩(^▿^)۶   cheer support
+٩(^ᴗ^)۶   cheer support
+(/^▽^)/   cheer support
+(ง'̀-'́)ง   cheer support
+(ง•̀o•́)ง   cheer support
+*\(^o^)/*   cheer support
+‎•'-'•)وがんばぁ~✧   do your best
+ｶﾞﾝﾊﾞﾙ(๑•̀ㅁ•́ฅ✧   do your best
+(๑•̀ㅂ•́)و✧ｶﾞﾝﾊﾞﾙ   do your best
+(๑•̀ㅂ•́)وがんばる!!!   do your best
+(*ゝ∀･)v＜ｶﾞﾝﾊﾞﾙﾈ♪   do your best
+頑張るぅ❣️୧(⑅˃ᗜ˂⑅)୨💓   do your best
+(・﹏・)   endure hold on
+(◔_◔)   endure hold on
+(￣^￣°)   endure hold on
+(￣ii￣)   endure hold on
+(；´ω` )   endure hold on
+(´-﹏-`)   endure hold on
+(；ﾟдﾟ)   help
+Σ(Ｔ▽Ｔ)   help
+(；´∀`)   help
+(´；ω；`)   help
+(；´д`)ゞ   help
+(´・ω・`)   help
+(ಠ‿ಠ)   warning attention
+(`ε´)   warning attention
+(#｀Д´)   warning attention
+！(｀Д´)！   warning attention
+⚠(･д･´)⚠   warning attention
+⚠(⌐■_■)⚠   warning attention
+٩(●˙▿˙●)۶   fight
+(๑˃ ᴗ˂ )و   fight
+(ง •̀ω•́)ง   fight
+(๑• ㅂ• )و✧   fight
+(*p'∀'q)ふぁいち♪   fight
+(ง ˙᷅ᵌ˙)งﾌｧｲｯ   fight
+(ฅ`･ω･´)っ   punch
+☆ヾ(￣￣*)えいっ   punch
+(^^)–●☆(__)   punch
+'σ=（｀´メ∂テヤッ   punch
+|ﾟдﾟ)ﾉ ⌒ ●~*   punch
+(pﾟﾛﾟ)==p)`д)   punch
+🥊( ･ω･)っ💥   punch hit
+🥊(  'ω' و(و   punch hit
+( ≧Д≦)=○)ﾟ∀ﾟ)   punch hit
+(o゜▽゜)o☆)`3ﾟ)   punch hit
+🥊( ˙꒳˙🥊)ﾌｧｲﾄ!   punch hit
+(ﾟ∀ﾟ)=○)ﾟДﾟ)○=(ﾟ∀ﾟ)   punch hit
+(ｏ｀д´)＝〇ｵﾗｵﾗ   ora punch fight
+☆ヾ(￣￣*)えいっｵﾗ   ora punch fight
+(っ`･ω･)≡〇ｵﾗｵﾗ   ora punch fight
+💪(`益´)＝〇ｵﾗｵﾗ   ora punch fight
+✨0(｀・ω・´)=〇ｵﾗ   ora punch fight
+🎀(ฅ`･ω･´)っｵﾗ   ora punch fight
+(＠・｀д・)≡○))   hit
+( ・д・)⊃)・O・)   hit
+💥(｀･ω･´)叩く！   hit
+💫叩くよー( ･ω･)ﾉ   hit
+( •̀ω•́ )✧叩くよ   hit
+o(￣ ◇￣)○ぱぁぁんち   hit
+☆))Д´)ｳｯ…   slap
+☆))Д´)ｸﾞﾊｯ   slap
+(ﾟДﾟ)っ☆))Д´)ﾊﾟｰﾝ   slap
+(｀Д´)⊂彡☆))Д´)ﾊﾟｰﾝ   slap
+( ﾟдﾟ)っ☆))Д´)ﾊﾟｰﾝ   slap
+( 'д'⊂彡☆))Д´) ﾊﾟｰﾝ   slap
+(-д-)   retort smack
+(-ω-)ノ   retort smack
+Σ(｀Д´)   retort smack
+(｀Д´)ﾉ   retort smack
+(°д°)ﾉ   retort smack
+Σ(・＿・)   retort smack
+ᕙ(⚫ↀ⚫)ᕗ   muscle strong flex
+ᕦ(⌒▽⌒)ᕤ   muscle strong flex
+ᕦ(ಠ_ಠ)ᕤ   muscle strong flex
+ᕦ(ò_ó)ᕤ   muscle strong flex
+ᕙ(☉ਊ☉)ᕗ   muscle strong flex
+ᕙ( ᐛ )ᕗ   muscle strong flex
+💪( ᐛ)ᕙ   power strong
+💪(ᐛ ´)！   power strong
+(ᴗ ᐛ ᗜ)💪   power strong
+💪( ᐛ )ﾊﾟﾜｱ   power strong
+💪( ᐛ)ﾊﾟﾜｧｧｧ   power strong
+💪( ᐛ )ﾊﾟﾜｰ!   power strong
+(∩'-'⊂)   beam laser
+๛ก(ｰ̀ωｰ́ก)   beam laser
+(　･ω･)ﾉﾋﾞｰﾑ   beam laser
+（（（（」`д´）」ビ   beam laser
+((≪ぢゅどーん！！！   beam laser
+－＼☆（・＿＼）キャッチ！   beam laser
+💥(´∇｀)💣   explode
+💣(・∀・)💥   explode
+（💥ω💥）ﾎﾞﾝ   explode
+💥( ˘ω˘ )💥   explode
+💥(◜ω◝)💣💥   explode
+💥(^o^)💣💥   explode
+|'ω')ﾌﾞｫﾝﾉ⌒   throw
+╰(´︶`)╯ﾌﾞｫﾝ   throw
+┗(^o^)┛ﾌﾞｫﾝ   throw
+ﾌﾞｫﾝ⌒ヽ(｀Д´)   throw
+(ﾉ´∀｀)ﾉ ﾌﾞｫﾝ   throw
+(´っ･ω･)ﾌﾞｫﾝっ   throw
+(´っ･ω･)っ ⌒⌒   toss
+ﾎﾟｲ(ﾉ˙³˙)ﾉ⌒   toss
+|'ω')ﾉ⌒゜ﾎﾟｲｯ   toss
+φ(ﾟﾛﾟ*)ﾉ⌒@ﾎﾟｲ   toss
+( っ'ω')っ⌒◦ﾎﾟｲ   toss
+(っ･-･)⊃ ⌒ο ぽい   toss
+( ᐛ )ﾉ⌒   throw away
+(ﾉ°∀°)ﾉ⌒   throw away
+（'-'）ノ⌒-   throw away
+⌒ヽ('-' )   throw away
+( '-')/⌒-   throw away
+( '-')ﾉ⌒-   throw away
+ﾊﾟｸｯ(･∀･)○   catch
+ﾋﾟﾀｯ(･ω･)σ   catch
+٩(ˊ〇ˋ)۶捕まえた   catch
+ﾀｲﾎ(ﾟдﾟ)ﾀｲﾎ   catch
+逮捕だ(｀･ω･´)ゞ   catch
+ｽﾎﾟｯ(･ω･)っ○   catch
+┗(＾0＾)┓   run
+┏┃*・д┃┛   run
+ᕕ┌◕ᗜ◕┐ᕗ   run
+ᕕ(ಥʖ̯ಥ)ᕗ   run
+≡≡≡ﾍ(*ﾟ∇ﾟ)ﾉ   run
+ε=ε=٩(๑･∀･)۶   run
+三（（（；◆◆）   dash run
+三┏(￣▽￣)┓   dash run
+三┏(￣∇￣)┓   dash run
+三┏(-∀-)┓   dash run
+三┏(・o・)┓   dash run
+三┏(⌒▽⌒)┓   dash run
+ε≡≡ﾍ( ´Д`)ﾉ   run away escape
+ε===(っ≧ω≦)っ   run away escape
+ε=ε=┏( >_<)┛   run away escape
+＝＝＝＝＝┌(；￣◇￣)┘   run away escape
+=͟͟͞͞( ✌°∀° )✌   run away escape
+ヽ(￣д￣;)ﾉ=3=3=3   run away escape
+歩くε=(｡・д・｡)   walk
+歩く(((((*ﾟДﾟ)   walk
+((((´・ω・`)歩く   walk
+((((｡'ㅂ')てくてく   walk
+(((((*´･ω･)歩く   walk
+🌿 ((((( ･ω･)   walk
+((((｡'ㅂ')ﾄｺﾄｺ   walk toddle
+三┏( ^o^)┛ ﾄｺﾄｺ   walk toddle
+ﾄｺﾄｺ(((((*´･ω･)   walk toddle
+(･ω･`*)))))ﾄｺﾄｺ   walk toddle
+｡｡｡(*o･ω･)oﾄｺﾄｺ   walk toddle
+ﾄｺﾄｺ｡｡｡8-(｡• •)   walk toddle
+||ﾛｳﾔ||……………λ   trudge
+(´・ω・`)λ......   trudge
+(´-ω-`)λ......   trudge
+|出口| λ…………ﾄﾎﾞﾄﾎﾞ   trudge
+|壁|λ......ﾄﾎﾞﾄﾎﾞ   trudge
+｡｡｡｡(( T_T)ﾄﾎﾞﾄﾎﾞ   trudge
+_(´ω`っ_≡=─ｽﾞｻｰｯ!!   slide
+─=≡Σ(っ´Д`っ)ｽﾞｻｰ!!   slide
+─=≡Σ(っ>Д<)っ ｽﾞｻｧ!!   slide
+＝≡≡≡≡(っ´Д`)っ ズサー!!   slide
+ｽﾞｻｧｧｰ( っ´Д`)っ≡≡≡💦   slide
+⊂(´･ω･`⊂)_≡=─ｽﾞｻｯ💨   slide
+💫ε(ง๑•o•)ว✨   jump fly
+ଘ(´｡•ω•`)੭))   jump fly
+( ̊꒳ ̊◟ )⁾⁾⌯   jump fly
+⁽⁽ଘ( ˊᵕˋ )ଓ⁾⁾   jump fly
+✨≡≡≡ﾍ(*´∀`)ﾉ🌟   jump fly
+🛸⊂(･ω･*⊂)三✨飛ぶ   jump fly
+⊂(◉‿◉)⊃   zoom fly airplane
+=┌(｡• •)┘   zoom fly airplane
+ε≡(ノ´＿ゝ｀）ノ   zoom fly airplane
+⊂(゜ω゜)⊃ﾌﾞｰﾝ   zoom fly airplane
+⊂(･o･)⊃ﾌﾞｰﾝ   zoom fly airplane
+⊂(ﾟдﾟ)⊃ﾌﾞｰﾝ   zoom fly airplane
+|彡ｻｯ   hide
+壁]･)   hide
+|´-`)   hide
+|ﾟ∀ﾟ)   hide
+|壁]－)   hide
+|･∀･)   hide
+_･)ﾁﾗ   peek
+|ω･)ﾁﾗ   peek
+］ω-)ジー   peek
+|дﾟ)ﾁﾗｯ   peek
+ω'*)ﾁﾗｯ   peek
+|ω・`)じー   peek
+(´；ω;.:…   disappear vanish
+( ´_ゝ);:…   disappear vanish
+(´・ω・`).;:…   disappear vanish
+( ˇωˇ ).;:…   disappear vanish
+(´・ω…:.;::..   disappear vanish
+(´・ω:;.:… ｽｯ   disappear vanish
+(･ω･三･ω･)   search look find
+(^¬^≡^¬^)   search look find
+(σ*｀ﾟз´)σ   search look find
+（　ﾟдﾟ）ｱﾂ!   search look find
+(ﾟДﾟ≡ﾟДﾟ)?   search look find
+Σ(・口・)あった！   search look find
+(^-^≡^-^)   look around
+( ﾟдﾟ)ﾊﾟﾁｸﾘ   look around
+ｷｮﾛ(✧ω✧)ｷｮﾛ   look around
+ｷｮﾛ(⊙ω⊙)ｷｮﾛ   look around
+ｷｮﾛ(◉ω◉)ｷｮﾛ   look around
+Σ(ﾟДﾟ；≡；ﾟдﾟ)   look around
+σ(＾＾)   point
+(´∀｀)σ   point
+(・∀・)☝   point
+(°ロ°)σ   point
+(σ・・)σ   point
+(〃ﾉω)σ   point
+(´~｀)ﾑｼｬ   munch eat
+(´ー｀)ふぅ～🍜   munch eat
+🍴(ˆ~ˆ)ﾑｼｬ   munch eat
+🍜(*~*)ﾑｼｬ   munch eat
+(´ч`*)ﾓｸﾓｸ   munch eat
+🥯ﾓｸﾞ(´꒳`)   munch eat
+(⚈₋₍⚈)   chew eat
+(ა🍟૮)   chew eat
+ʕ•͈ⱉ•͈ʔ   chew eat
+(๑ᵔ⤙ᵔ๑)   chew eat
+(◍´⤙`◍)   chew eat
+( ˙౿˙ )   chew eat
+（￣Ｏ￣)   eat
+(^~^)   eat
+ヾ(´〇｀)ﾉ   eat
+( * °~°)   eat
+(๑´ڡ｀๑)ﾍﾟﾛﾘ   eat
+((o(･ρ･)o)) ﾊﾗﾍｯﾀｧ   eat
+(人˙꒳˙ )   let's eat
+(´∀`)いただきます   let's eat
+(・o・)いただきます   let's eat
+(￣▽￣) いただきます   let's eat
+イタダキマス(*￣￢￣)   let's eat
+(・🙏・)ｲﾀﾀﾞｷﾏｽ   let's eat
+（′∀′)ｺﾞﾁｿｳｻﾏ   full thanks meal
+(´∀｀)ノごちそうさま   full thanks meal
+(･ω･)oごちそうさま   full thanks meal
+( ´∀｀)ｺﾞﾁｿｳｻﾏ   full thanks meal
+ｺﾞﾁｿｻﾝ（*＾∀＾）ノ   full thanks meal
+(′∇`｡)ｺﾞﾁｿｳｻﾏ   full thanks meal
+٩( ᐕ)و   eat hearty
+(ง˘ω˘)ง   eat hearty
+٩( ᐖ )۶   eat hearty
+(ง ˙o˙)ว   eat hearty
+٩(=゜∀゜)ง   eat hearty
+ᕙ(⇀‸↼‶)ᕗ   eat hearty
+🍽(´ρ`)ｳﾏｿｳ   tasty delicious
+🍙(○´ω｀○)ｳﾏ   tasty delicious
+🍴(*´ч`*)ｳﾏｲ   tasty delicious
+🍵( ´ω`)ｳﾏｲﾅ   tasty delicious
+🍕٩(ˊᗜˋ*)وｳﾏｰ   tasty delicious
+🍽️(๑❛ڡ❛๑)ごちそう   tasty delicious
+(≧ڡ≦*)   delicious
+(⌒‿⌒)♡   delicious
+(◕◡◕)♡   delicious
+(◡‿◡)♡   delicious
+(◕‿◕)♡   delicious
+(◔◡◔)♡   delicious
+(´﹃｀)   drool
+(º﹃º)   drool
+(¯﹃¯)   drool
+(･﹃･)   drool
+(°﹃°)   drool
+('﹃')   drool
+('u')   drool
+(๏﹃๏)   drool
+(´ڡ`)   drool
+(º﹃º〃)   drool
+(´>_ƒ)   drool
+(　´﹃｀)   drool
+(´∀｀)ペロペロ   lick
+(･♀･)ペロペロ   lick
+(∩ڡ∩)もぐもぐ   lick
+(・ڡ・)ぺこぺこ   lick
+( ＾ڡ＾)ペロペロ   lick
+(≧ڡ≦*)おいしい   lick
+☕o口(ᵔᴥᵔ)♪   drink
+o口(๑´ڡ`๑)♡   drink
+o口(๑•᎑•๑)〜   drink
+☕o口(❛ڡ❛ )♪   drink
+🥛(´ω`)o口〜   drink
+🍵o口(◍•ᴗ•◍)   drink
+(/◎＼)ｺﾞｸｺﾞｸｯ   gulp drink
+(*/◎＼*)ｺﾞｸｺﾞｸ   gulp drink
+o口(･∀･)ｺﾞｸｺﾞｸ   gulp drink
+o口(´Δ`)ｺﾞｸｺﾞｸ   gulp drink
+o口(￣▽￣)ｺﾞｸｺﾞｸ   gulp drink
+o口(ﾟдﾟ)ｺﾞｸｺﾞｸ   gulp drink
+( ^^)／▽   cheers drink
+(￣ー￣)/C□   cheers drink
+(*￣0￣*)ノ口   cheers drink
+（ ^^）Y 乾杯！   cheers drink
+∀('ー'*) カンパイ♪   cheers drink
+かんぱ～い （￣ー￣）/C□   cheers drink
+ᐠ( ᑒ )ᐟ   sneeze
+ｸｼｭ(>_<)   sneeze
+ﾊｸｼｮ(>o<)   sneeze
+(っ｀з´)っ･:∴   sneeze
+(>＿<) ｸｼｭｯ   sneeze
+( >ε<)ｸｼｭｯ   sneeze
+ヾ(￣∀￣*)   cough
+＼(^=□=^)／マスクシテマス   cough
+(´ρ｀*)ｺﾎﾝ   cough
+( >д<)､;'.･   cough
+(;・＝З・) ｹﾞﾎｯ   cough
+(>o<) ｺﾝｺﾝ！！   cough
+（´Д｀）   ouch pain
+(＞ω＜)   ouch pain
+(。_＋)   ouch pain
+(>_<。)   ouch pain
+( > <。)   ouch pain
+( #)д`)   ouch pain
+(＾〃＾)   nosebleed
+|་།￣)   nosebleed
+(＾་།＾)   nosebleed
+(￣ﾊ￣*)   nosebleed
+\(￣ﾊ￣)   nosebleed
+(￣ ;￣)   nosebleed
+⌨️(・ω・)ノ   computer pc typing
+⌨️(*´∀｀)   computer pc typing
+💻(｀・ω・)   computer pc typing
+📧(・∀・)ノ   computer pc typing
+💻( ﾟ∀ﾟ)   computer pc typing
+💻(・ω・)b   computer pc typing
+(･-･)✐   study
+(*･ᴗ･*)و✎   study
+￠( •̀_•́ )   study
+✏️( ･ω･)📚   study
+✐☡( ⚯̫ )⌣̈⃝   study
+(◎-◎)/✎___ｶｷｶｷ   study
+✧･ﾟ: *✉* :･ﾟ✧   letter mail
+( ･∀･)つ✉   letter mail
+(っ´ω`)っ✉   letter mail
+(・ω・)つ手紙   letter mail
+(｢･ω･)｢✉   letter mail
+( ・ω・)⊃✉   letter mail
+_φ(･_･   note memo
+φ(．．)ﾒﾓﾒﾓ   note memo
+….〆(･ω･。)   note memo
+‪…φ(･ω･*)   note memo
+φ(❐_❐✧ﾒﾓﾒﾓ   note memo
+φ(.. ) ﾒﾓﾒﾓ   note memo
+【◎】д   camera photo
+【◎】д=)   camera photo
+Σp【◎】´)   camera photo
+Σp📷ω･´)   camera photo
+パチ/■\_・)   camera photo
+パチ/■\_´)   camera photo
+(ノ･Θ･)ノ凹 ┣凹━凹━凹┫   laundry
+お洗濯♪(ノ･＿･)ノ凹 ┣凹━凹━凹┫   laundry
+ヽ(・∀・)ﾉ凹 ┣凹━凹━凹┫わーい♪   laundry
+(ﾉ^∇^)ﾉ┣bd━凹━▽┫洗濯物干し♪   laundry
+(ノ｡･ω･)ﾉ凹 ┣凹━凹━凹┫お洗濯♪   laundry
+ヾ(´ω｀=´ω｀)ﾉ凹 よいしょよいしょ   laundry
+(▽〃)｡oO   speech bubble
+˙▿˙ )/＜   speech bubble
+(っ'ヮ'c)<   speech bubble
+（´-`）.｡oO   speech bubble
+(●´ｴ`●)o〇   speech bubble
+˙³˙ ){  ]   speech bubble
+(ﾉ･o･)ﾉ   magic
+(ノ￣ー￣)ノ   magic
+ヽ(´ー｀)ノ   magic
+(*´꒳`*)∩   magic
+(ﾉ*ФωФ)ﾉ   magic
+ヽ(゜Q。)ノ？   magic
+ｷﾀ━(ﾟ∀ﾟ)━!   it's here hype
+ｷﾀ━━(ﾟ∀ﾟ)━━!   it's here hype
+ｷﾀ━━(ﾟ∀ﾟ)━━!!   it's here hype
+ｷﾀ━━━(ﾟ∀ﾟ)━━━!   it's here hype
+ｷﾀ━━━ヽ(ﾟ∀ﾟ)ﾉ━━━!!   it's here hype
+ｷﾀ━━━━(ﾟ∀ﾟ)━━━━!!   it's here hype
+🤫( ˘ω˘ )   quiet shh
+( ˘•ω•˘ )🤫   quiet shh
+🤫⸜( ˘ω˘ )⸝   quiet shh
+( •̀ω•́ )🤫✨   quiet shh
+( ˘•ω•˘ )🤫💫   quiet shh
+(￣b￣)ｼｰｯ!   quiet shh
+ʕ •ᴥ•ʔ   fluffy soft
+ʕ ꈍᴥꈍʔ   fluffy soft
+૮ ⚆ﻌ⚆ა   fluffy soft
+ʕ ·ᴥ· ʔ   fluffy soft
+ʕ´•ᴥ•`ʔ   fluffy soft
+U ´ᴥ` U   fluffy soft
+( ˘ω˘) もふ   fluffy fuzzy
+(▔•ω•▔) もふ   fluffy fuzzy
+(っ´ω`c) もふ   fluffy fuzzy
+(っ´∀｀c) もふ   fluffy fuzzy
+もこもこ(˘ω˘)♡   fluffy fuzzy
+(ง˘ω˘)ว♡もふ   fluffy fuzzy
+ノ・ω・ヾ   squish
+(ノ)ω(ヾ)   squish
+(っ＞ω＜c)   squish
+(ノ・ω・ヾ)   squish
+(ﾉ)・ω・(ヾ)   squish
+(ノ)`ω´(ヾ)   squish
+(ﾉ)ω(ヾ)   squishy
+(ﾉ)∀(ヾ)   squishy
+(ﾉ)▽(ヾ)   squishy
+(ﾉ)◡(ヾ)   squishy
+(ﾉ)꒳(ヾ)   squishy
+(ﾉ)ᴗ(ヾ)   squishy
+＿ﾄ￣|○   panting
+（ﾉ∀＼*）ｷｬ   panting
+(〃艸〃)ﾑﾌｯ   panting
+(*'д`*)♂   panting
+（´∀｀*）ｳﾌﾌ   panting
+(ﾟOﾟ;ﾊｧﾊｧ   panting
+○|￣|＿＝３   fart
+●|￣|_=3   fart
+(;´Д`)=3   fart
+（°-°)=}ぷッ   fart
+( ´_ゝ`)=3   fart
+( ；´꒳`；)=3   fart
+🎉(≧▽≦)🎉   yeehaw wild
+✨ヽ(＾o＾)丿✨   yeehaw wild
+ヽ(´▽`)ノワーイ   yeehaw wild
+🎵ヽ(´▽`)ノ🎵   yeehaw wild
+ヽ(＾o＾)丿ウェーイ   yeehaw wild
+(ノ´▽`)ノウェーイ   yeehaw wild
+(ｿﾜｿﾜ   restless
+ｿﾜｿﾜ(；ﾟДﾟ)   restless
+(・ω・｀三´・ω・)   restless
+( ﾟДﾟ)≡ﾟДﾟ)   restless
+(´･ω･｀)ｿﾜｿﾜ   restless
+(・ω・｀≡´・ω・)   restless
+ฅ•ω•ฅ   cat
+*´꒳`ฅ   cat
+ฅ(^^ฅ)   cat
+ฅ•ﻌ•´ฅ   cat
+(ฅ'ω'ฅ)   cat
+ฅ^•ω•^ฅ   cat
+(ΦωΦ)   cat meow
+ฅ._.ฅ   cat meow
+^>・<^   cat meow
+^_ ̫ _^   cat meow
+=^•.•^=   cat meow
+≡^・.・^≡   cat meow
+ฅ(￣ω￣)ฅ   paw cat
+ฅ(◕ω◕ฅ)   paw cat
+ฅ( ˙0˙)ฅ   paw cat
+(ฅ•ω•ฅ)♡   paw cat
+ฅ(ღ✪v✪)ฅ   paw cat
+ฅ(╯✧ω✧)╯   paw cat
+U・ᴥ・U   dog
+U・ﻌ・U   dog
+∇・ω・∇   dog
+ᵕ•ﻌ•ᵕ   dog
+ᐡ-ﻌ-ᐡ   dog
+(∪^ω^)   dog
+₍ᐢ･௰･ᐢ₎   rabbit bunny
+₍ᐢ⑅•ᴗ•⑅ᐢ₎   rabbit bunny
+₍ᐢ⑅•ω•⑅ᐢ₎   rabbit bunny
+( ᐡ. ̫ .ᐡ )   rabbit bunny
+( ᐡ｡• ·̫ •｡ᐡ )   rabbit bunny
+U・x・U♡♡   rabbit bunny
+・㉨・   bear
+ᵔᴥᵔ   bear
+ʕ·ᴥ·ʔ   bear
+ʕ•㉨•ʔ   bear
+ʕ ·ᴥ·ʔ   bear
+ʕ·ᴥ· ʔ   bear
+(◝◜)   fox
+(◝‿◜)   fox
+^.,.^   fox
+^･ω･^   fox
+^◕ω◕^   fox
+^＾ω＾^   fox
+⓿ᴥ⓿   tanuki raccoon
+‎⓿ᴥ⓿   tanuki raccoon
+ᐢ⓿ᴥ⓿ᐢ   tanuki raccoon
+₍ᐢ⓿ᴥ⓿ᐢ₎   tanuki raccoon
+⋝⁎⓿ᴥ⓿⁎⋜   tanuki raccoon
+^⁎⓿ᴥ⓿⁎^   tanuki raccoon
+(◕🐽◕)   pig
+(V｀⚇´V)   pig
+(ー🐽ー)/   pig
+(￣(oo)￣)   pig
+(⦁᳐🐽⦁᳐)   pig
+ฅ՞^🐽^՞ฅ   pig
+𓃗ˊᵕˋ   horse
+∈･^)೨⁾⁾   horse
+(☋)･^ミｳﾏｰ   horse
+∈･^ミ ﾋﾋｨｰﾝ   horse
+(・∀・)🐴   horse
+(＾ω＾)🐎   horse
+≡･ｪ･≡   lion
+≡･ω･≡   lion
+(°∞°)   lion
+E^∀^ﾖ   lion
+≡･ᴥ･≡   lion
+≡･ᴗ･≡   lion
+(≡ω≡)   tiger
+ฅ(`ω´)ฅ   tiger
+(≡・x・≡)   tiger
+≦^.≡.^≧   tiger
+(≡・꒳・≡)   tiger
+(≡ﾟ∀ﾟ≡)   tiger
+‖：8]   gorilla
+( ᐛ )ｳﾎ   gorilla
+⊂( ᴖ ̫ᴖ)⊃   gorilla
+(٩๑・ω・๑و)   gorilla
+( -᷅ ̫̈-᷄ )   gorilla
+( ﾟA ﾟ)ウホウホ   gorilla
+ʕ•̫͡•ʔ   hamster
+ʢ'•ﻌ•ʡ   hamster
+ʕ•ﻌ•ʔ🐹   hamster
+₍ᐢ•ﻌ•ᐢ₎   hamster
+ʕ๑•ᴥ•๑ʔ   hamster
+(・ω・)🐹   hamster
+ʕ·͡ᴥ·ʔ   flying squirrel
+꒰՞･ω･՞꒱   flying squirrel
+꒰՞•ﻌ•՞꒱   flying squirrel
+(՞•֊•՞)   flying squirrel
+꒰๑•ᴗ•๑꒱   flying squirrel
+꒰ ｡•ω•｡ ꒱   flying squirrel
+(◕ᴥ◕)   seal
+ᶘ ᵒᴥᵒᶅ   seal
+(ᵕ—ᴗ—)   seal
+(:3 っ)っ   seal
+(:3 っ)∋   seal
+( 'ᴥ' )   seal
+(・Θ・)   penguin
+(•ө•)   penguin
+(・⊝・)   penguin
+(⊙ө⊙)   penguin
+(°Θ°)   penguin
+(｀Θ´)   penguin
+🐥(・θ・)   bird
+(⊙ө⊙)🐣   bird
+(Ő θ Ő)   bird
+(´⊙ө⊙`)   bird
+(◦'Θ'◦)   bird
+🌟(・Θ・)🌟   bird
+(・θ・)   chick bird
+(￣Θ￣)   chick bird
+(◉Θ◉)   chick bird
+(`Θ´)   chick bird
+(＋Θ＋)   chick bird
+(`θ`)   chick bird
+(ё)   duck
+(・ɞ・)   duck
+(・o・)   duck
+(´Θ｀)   duck
+(・△・)   duck
+(・з・)   duck
+<^)   crow
+Σ^)/   crow
+Σ^)／   crow
+(Σ^)   crow
+ΣΘ)β   crow
+(´ )   crow
+⌒(ё)⌒   seagull
+ヘ(ё)ヘ   seagull
+︵(°e°)︵   seagull
+︵(°ω°)︵   seagull
+⌒(･ω･)⌒   seagull
+⌒(·ω·)⌒   seagull
+<))彡   fish
+（：。）ミ   fish
+>)))彡   fish
+～・_・～   fish
+<°)))彡   fish
+>°)))彡   fish
+──>°)))彡   shark
+<・)))><<   shark
+___Ͼ˳Ͽ___   shark
+───>°))))彡   shark
+╰(°▽°)╯ 🦈   shark
+~~~~~>°)))彡   shark
+ﾐ(｡:)   octopus
+(:｡)ﾐ   octopus
+(⩌◡⩌)🐙   octopus
+🐙(˘⩋˘)   octopus
+🐙⩠(˙⩒˙)   octopus
+( ˙ᯅ˙ )🐙   octopus
+ᔦ°ω°ᔨ   squid
+ᔦ・∇・ᔨ   squid
+ᔦ˘꒳˘ᔨ   squid
+ᔦ⊙ꆚ⊙ᔨ   squid
+ᔦ'ω`'ᔨ   squid
+ᔦ'꒳`'ᔨ   squid
+≧[ﾟ ﾟ]≦   crab
+ミ[ﾟ ﾟ]ミ   crab
+≡[ﾟ ﾟ]≡   crab
+≧[ﾟ∀ﾟ]≦   crab
+≧[ﾟ∇ﾟ]≦   crab
+≧[ﾟ▽ﾟ]≦   crab
+~(˘▾˘~)🪼   jellyfish
+🪼(~˘▾˘)~   jellyfish
+~(‾▽‾~)🪼   jellyfish
+🪼(~‾▽‾)~   jellyfish
+🪼(●´ω｀●)🪼   jellyfish
+~🪼(˘▾˘)🪼~   jellyfish
+Θ_Θ   frog
+ΘωΘ   frog
+(Θ-Θ)   frog
+(Θ‥Θ)   frog
+(ΘωΘ)   frog
+(ΘнΘ)   frog
+˙ᴥ˙   animal
+(^ᴥ^)   animal
+ʕ •ᴥ• ʔ   animal
+ʕ ᵔᴥᵔ ʔ   animal
+(‐(エ)‐)   animal
+ʕ๑•ﻌ•๑ʔ   animal
+旦_(-_-)   tea
+旦_(^o^)   tea
+旦_(・o・;)   tea
+( ^-^)o旦~   tea
+( ^-^)_旦~~   tea
+旦_(＾◡＾) 玄米茶   tea
+☕(ㆁωㆁ)   coffee cafe
+☕(˶˙˙˶)   coffee cafe
+☕(◕ᴗ◕✿)   coffee cafe
+(っ˘ω˘c)☕   coffee cafe
+٩(˘◡˘)۶☕   coffee cafe
+☕(๑>◡<๑)   coffee cafe
+( ᐛ🍺)   beer
+(🍺•᎑•🍺)   beer
+(*>∀<)o🍺   beer
+( 'ᴗ'o🍺o   beer
+🍺*(ˊᗜˋ*)و   beer
+(*>∀<)o(酒)   beer
+🍚(°ω°)   rice
+🍙p(▲)q   rice
+ヽ(°▽、°)ﾉ   rice
+🍙( ˙༥˙ )   rice
+(˘༥˘ )ｺﾞﾊﾝ   rice
+◯𓇋٩(")۶𓌉   rice
+(っ˙༥˙🍜)   ramen
+( ˘ω˘)🍜   ramen
+( ˙༥˙ )🍜   ramen
+(´･ω･`)🍜   ramen
+🍜(•ω•)🍜   ramen
+🍜(＾▽＾)🍜   ramen
+🍢🐙(^～^)   takoyaki
+🐙🔥(๑´ڡ`๑)   takoyaki
+🥢🐙(｡･ω･｡)   takoyaki
+(๑´ڡ`๑)🐙🔥   takoyaki
+🍴🐙🍴(≧∇≦)   takoyaki
+🔥(ノ´ヮ`)ノ🐙   takoyaki
+( ᐛ)و   banana
+( ᐛ)ノ   banana
+( ᐛ)/   banana
+و( ᐛ )   banana
+ヽ( ᐛ )ノ   banana
+( ᐛ )ﾊﾞﾅﾅ   banana
+߹∀߹   spring
+(´・~・｀)   spring
+(´ω`)🌸   spring
+(≧◡≦)🌸   spring
+🌸(⌒‿⌒)   spring
+(≧▽≦)🌸   spring
+(;´ д)   summer
+(⌯́⌓⌯̀)   summer
+(｡⌓°꒷꒦⎞   summer
+ヾ(´▽｀)ﾉ虫   summer
+(｡>﹏<)ｱﾁ~   summer
+(ﾟ∀ﾟ)ひまわり   summer
+秋|口･）   autumn fall
+(ヽ´ー`)ノ   autumn fall
+( ◜o◝ )   autumn fall
+( ˘ω˘ )ｱｷ   autumn fall
+( ˘ᵕ˘ )🍁   autumn fall
+(´ー`)🍁秋風   autumn fall
+(:D)┼─┤バタッ   autumn fall
+＿|￣|○ ｶﾞｸｯ   autumn fall
+(o_ _)o パタッ   autumn fall
+(o_□_)oﾄﾞﾃｯ   autumn fall
+o-( _ _)oバタリ   autumn fall
+(ﾉ＿ω＿)ﾉ ﾊﾞﾀﾝ   autumn fall
+(ㅎ.ㅎ )   sun
+(˙꒳˙ )/   sun
+( ॱߑॱ )   sun
+( ′-′ )   sun
+(¯•ω•¯)   sun
+( ˙࿁˙ )   sun
+┗(☀️)┛   sun
+m(☀️)m   sun
+(°⌓°)☀️   sun
+(⚆ _ ⚆)☀️   sun
+( ˘▾˘ )☀️   sun
+(´◡`)(☀️)   sun
+(~ヾ)ｱﾁ   hot
+(；´д｀)…   hot
+（−＿−；）ｱﾂｲ   hot
+ι(´Д｀υ)ｱﾂｨｰ   hot
+｡ﾟ(;˘ω˘)ﾟ｡ｱ   hot
+＼｜／―☀―ｷﾞﾗ／｜＼   hot
+((+_+))   cold freezing
+((´д｀))ｻﾑｲ   cold freezing
+((;´Д｀))ｻﾑｲ   cold freezing
+((+_+))ｻﾑｯ・・   cold freezing
+:(´◦ω◦｀):ｻﾑｲ   cold freezing
+{{ (>_<) }}ｻﾑｲ   cold freezing
+(⌒-⌒)☔   rain
+(｡･_･)☂   rain
+(╯︵╰,)☔   rain
+(´･ω･`)☔   rain
+(´･A･`)☔   rain
+(´;д;`)☔   rain
+(ゆ・ω・き)   snow
+(・_・)ｻﾑｲ   snow
+❄(｡･ω･｡)❄   snow
+(´︶`):❆･ﾟ   snow
+❄(*ºчº*)❄   snow
+(・∀・)っ:❆･ﾟ   snow
+(☾_☾)   moon
+(☽_☽)   moon
+(☾▽☾)   moon
+(☽▽☽)   moon
+(*☾ω☾*)   moon
+(*☽ω☽*)   moon
+(★ω★)   star
+(★‿★)   star
+(★o★)   star
+(★∀★)   star
+(*☆ω☆)   star
+(^-)-★   star
+(≖‿≖)✩⡱   shooting star wish
+(≧◡≦)つ✨   shooting star wish
+(°∀°)つ💫   shooting star wish
+(•⌓•)つ☆彡   shooting star wish
+(*ﾟ∀ﾟ)💫   shooting star wish
+(´°ω°`)つ💫   shooting star wish
+(´ω｀)ﾉ━━※   fireworks
+ꙭ(*˙︶˙*)ノ҉   fireworks
+(⌒∇⌒)∠※※※※※   fireworks
+(°Д°)ﾊﾅﾋﾞｨ?!   fireworks
+(´ω｀)ﾉ━━※ 花火   fireworks
+҉*\( 'ω' )/*҉   fireworks
+ヽ(･∀･)ﾉ   festival
+ヽ(´▽｀)/   festival
+(ﾉ´ヮ`)ﾉ   festival
+(ﾉ≧∇≦)ﾉ   festival
+ヽ(^。^)ノ   festival
+ヽ(≧∀≦)ﾉ   festival
+┗(^o^)┛   festival
+(੭˙꒳˙)੭   festival
+└('ω')┘   festival
+(」・ω・)」   festival
+〈( ^.^)ノ   festival
+( *・ω・)ノ   festival
+✿Happy Birthday✿(◡‿◡✿)   birthday
+(＾▽＾)お誕生日おめでとう！   birthday
+( ﾟДﾟ)＜誕生日おめでとう！   birthday
+＼(^o^)／お誕生日おめでとう   birthday
+(o´∀`o)お誕生日おめでとう♪   birthday
+(*´▽｀*)お誕生日おめでとう！   birthday
+Ψ・ω・Ψ   christmas
+Ѱ*･●･*Ѱ   christmas
+┗*･●･*┛   christmas
+┗|´･_●･|┛   christmas
+( ̄࿀̫ ̄ )   christmas
+Y Y (•●•)   christmas
+(▼v▼)   halloween
+≧◉◡◉≦   halloween
+［*_*］   halloween
+σ(▼w▼)   halloween
+σ(o'w'o)   halloween
+(((▼w▼)))   halloween
+🎃(・ω・)   pumpkin halloween
+🎃(´∀｀)   pumpkin halloween
+🎃(･ω･)   pumpkin halloween
+🎃(´▽｀)   pumpkin halloween
+(￣▽￣)🎃   pumpkin halloween
+🎃(￣∇￣)   pumpkin halloween
+ヽ(´ー｀)ノあけおめ   new year
+(ﾟ∀ﾟ)ﾉｱｹｵﾒ！   new year
+明けまして( ・ω・)ノ   new year
+ΑКЁОМЁヽ(〃v〃)ﾉ   new year
+🎍お正月だよ～🎍ヾ(｡･ω･｡)   new year
+🌸お正月ピース🌸v(｡･ω･｡)   new year
+(炎◇炎)σ   camp campfire
+( ´∀｀)σ🔥   camp campfire
+(˘ω˘)メラメラ   camp campfire
+（炎∇炎）メラメラ   camp campfire
+(･∀･)メラメラ   camp campfire
+(•ᴗ•๑)メラメラ   camp campfire
+∧_∧   angel
+°ʚɞ°   angel
+ʚ(•̮•)ɞ   angel
+ଘ(ˊᵕˋ)ଓ   angel
+ପ(˙꒳˙)ଓ   angel
+(ง˙ω˙)ว   angel
+v._.v   demon ogre
+(⩌۝⩌)   demon ogre
+(｢Д´)｢   demon ogre
+(｢益´)｢   demon ogre
+(｢ﾛ´)｢   demon ogre
+(｢･ω･)｢   demon ogre
+･ᜊ･   ghost
+(¯¯＞)   ghost
+( ᜊ )   ghost
+ཀ༼ༀ༽ཫ་   ghost
+l ỏ꒪)ꐑ   ghost
+(AϖA)ゝ   ghost
+(∩ᄑ_ᄑ)⊃━☆   witch
+(・-・)⊃━☆ﾟ   witch
+⊂(・▽・)⊃━☆ﾟ.   witch
+彡ﾟ◉ω◉ )つー☆*   witch
+ヽ(° ͜>°)ﾉ*҉   witch
+(∩^ω^)⊃━☆ﾟ.*   witch
+(￣^￣)卍   ninja
+(・ω・)卍   ninja
+(・∀・)ﾉ卍   ninja
+(￣人￣)ﾆﾆﾆﾝ   ninja
+(・∀・)ｼｭｯ!   ninja
+(・∀・)≡≡≡卍   ninja
+（｀Д´）つ＝＝卍卍 💥   shuriken ninja
+[壁]ｰﾟ)ノ‥‥━━卍ｼｭｯ   shuriken ninja
+(*・∀・)//＝≡卍ｼｭｯ!!   shuriken ninja
+(ﾉ￣∀￣)ﾉ＝＝＝＝＝＝＝＝卍卍   shuriken ninja
+(=ﾟωﾟ)ﾉ —===≡≡≡ 卍   shuriken ninja
+(ノ･▽･)ノ＝＝＝＝＝＝＝＝卍卍   shuriken ninja
+(🔴ω🔴)   clown
+( ᐛ👐)パァ   clown
+(🔴･▽･🔴)🤡   clown
+(☆○☆)   clown
+(★●★)   clown
+(☆Å☆)   clown
+(─๑^)   baby
+(・๑・)   baby
+(•̥ •)   baby
+(　•๑•　)   baby
+(𐐫ㆍ𐐃)   baby
+(っ´ɷ`c)   baby
+(￥▽￥)   money
+($∀$)   money
+(＄∀＄)   money
+(¥_¥)   money
+(￥-￥)   money
+(¥ω¥)   money
+(♛‿♛)   crown king
+♛(˘꒳˘)♛   crown king
+✧(♛◡♛)✧   crown king
+♕(˘꒳˘)✨   crown king
+( ˘ ³˘)♛✨   crown king
+♛♡( ^ _ ^ )   crown king
+(✿ヘᴥヘ)   flower
+（❁▿❁＊）   flower
+(❀╹◡╹)   flower
+(ㆁ௰ㆁ🌸)   flower
+(u‿ฺu✿)   flower
+(ʘ‿ʘ)ノ✿   flower
+@};-   rose flower
+ξ´∀`ζ   rose flower
+—@}—'———   rose flower
+┌ ii ┐🌹   rose flower
+✧˖°🌹°˖✧   rose flower
+𓂃.*・ﾟꫂ ၴႅၴ   rose flower
+（葉´ω｀）   leaf
+🍃(･ω･)   leaf
+🍂(´∀｀)   leaf
+🍀(◕‿◕)   leaf
+🌿(◠‿◠)   leaf
+🍃(´▽`)   leaf
+◝(ᵔᵕᵔ)◜   ribbon
+つω＜🎀   ribbon
+˘ ೀ ˘   ribbon
+◕ ⑅ ◕   ribbon
+› ◕ ‹   ribbon
+^. ̫ .^   ribbon
+ᜊ(•ᴗ•)ᜊ   wings
+ヾ(＾∇＾)✧   wings
+ଘ(੭ˊᵕˋ)੭   wings
+ଘ(੭•ω•)੭   wings
+ᜊ(ᐢ..ᐢ)ᜊ   wings
+ଘ(੭˃ᴗ˂)੭   wings
+◉‿◉   glasses
+(◔‿◔)   glasses
+(◓‿◓)   glasses
+(◕ᴗ◕✿)   glasses
+(✿◡‿◡)   glasses
+(｡☬０☬｡)   glasses
+(*ё Дё)y-..oO○   bubbles
+(*ﾟ3ﾟ)y-~~~。o○◯   bubbles
+( ﾟ3ﾟ)y-～～～。ｏ○◯   bubbles
+ʕ｡๑•㉨•ʔฅ➖.o.oo.o○   bubbles
+(ﾉ´з`)ﾉ .*:o○☆*ﾟ'ﾟ   bubbles
+( *´•ω•)ฅー. ○　° ◯ 　҉   bubbles
+(@ࡇ@)   dizzy
+≦＠ｘ＠≧   dizzy
+(𖦹ࡇ𖦹)   dizzy
+((๑◇๑))   dizzy
+(‎๑ࡇ‎@)   dizzy
+(((@ࡇ@)）   dizzy
+〆(･ω･｡)了解   check
+( ˘ω˘ )ﾁｪｯｸ   check
+〆(ﾟ▽ﾟ*)確認OK   check
+(˘ω˘) チェック中～   check
+(˘˘) チェック中だよ   check
+( ･_･)✍︎チェック中   check
+ｶｷｰｰﾝ (・ω・)＿/ 彡⚾️   baseball
+ｶｷｰｰﾝ (≧∇≦)＿/ 彡⚾️   baseball
+ｶｷｰｰﾝ (・∀・)＿/ 彡⚾️   baseball
+ｶｷｰｰﾝ (◕‿◕)＿/ 彡⚾️   baseball
+ｶｷｰｰﾝ (✧ω✧)＿/ 彡⚾️   baseball
+ｶｷｰｰﾝ (☆▽☆)＿/ 彡⚾️   baseball
+(🍿>∀<)⸝   movie
+🎬(⊙_☉)🍿   movie
+🍿( ⊙.☉)🎬   movie
+🎥( ˙꒳˙ )🍿   movie
+🍿⌒(｡･ω･｡)⌒   movie
+🎬( ´∀｀) 🍿   movie
+# --- from rofimoji (MIT, see the notice at the top) ---
+◎▼◎   bird
+✖‿✖   dead
+≖‿≖   dead
+ʘ‿ʘ   fun
+ಥ⌣ಥ   angry
+ಠ▃ಠ   angry
+⊙▂⊙   surprised
+ఠ_ఠ   confused
+>=<   ocean sea
+༼∵༽   troll
+༼⍢༽   troll
+༼⍤༽   troll
+༼⍨༽   troll
+♥‿♥   love
+๏◡๏   fun
+⊙︿⊙   sad
+╥﹏╥   sad cry
+⊙０⊙   surprised
+✘Д✘◍   dead
+:(¦)   animal
+3:*)   animal
+(⊃‿⊂)   hide
+|_・)   hide
+ﾍ(･_|   hide
+(•∋•)   bird
+✿♥‿♥✿   love
+(≧σ≦)   angry
+(┳◇┳)   angry
+-`д´-   angry
+(ಥ⌣ಥ)   angry
+(‘A`)   sad
+(┳Д┳)   sad cry
+(○o○)   surprised
+(^^ゞ   embarrassed
+(╯_╰)   embarrassed
+(╯ಊ╰)   embarrassed
+(⊙_◎)   confused crazy
+(ﾟｰﾟ;   confused
+(♠_♦)   confused crazy
+(C_C)   confused
+(╯3╰)   kiss
+(TεT)   kiss
+|°з°|   kiss love
+(‘ε’)   kiss
+(ΦзΦ)   kiss
+(ᴗ˳ᴗ)   sleep
+【:εω   sleep
+눈_눈   think
+(･ｪ-)   wink
+(o‿∩)   wink
+༼≖ɷ≖༽   troll
+༼✷ɷ✷༽   troll
+༼ԾɷԾ༽   troll
+༼இɷஇ༽   troll
+(×_×#   dead
+(ñ_ñ)   dead
+(o_-)   dead
+(º_º)   dead
+● ﹏☉   sad
+＠ノ"   animal
+웃❤유   love
+(●∈∋●)   bird
+( p_q)   sad cry
+(‘-’*)   embarrassed
+(*ﾉ▽ﾉ)   embarrassed
+(‘◇’)?   confused
+｢(ﾟﾍﾟ)   confused
+(●__●)   confused
+⁀⊙﹏☉⁀   confused crazy
+(⊙.☉)7   confused
+ㅇㅅㅇ   cat
+(ó㉨ò)   bear
+(✪㉨✪)   bear
+(~_~;)   worried
+(⊙…⊙ )   worried
+(⊙△⊙✿)   worried
+(°))<<   ocean sea fish
+(•ㅅ•)   rabbit
+(๏ᆺ๏υ)   rabbit
+(⁎˃ᆺ˂)   rabbit
+(o^^)o   dance
+o(^^o)   dance
+(ΘεΘ;)   kiss
+(－‸ლ)   think sad
+(^_−)☆   wink
+(-_＼)   surrender
+(✖╭╮✖)   dead
+( ;,;)   animal
+|ʘ‿ʘ)╯   fun wave
+[#´Д`]   sad
+(”)(”)   animal rabbit
+<コ:彡   animal
+(◕〝◕)   stare
+(ˆڡˆ)v   fun
+(ÒДÓױ)   angry
+•(ㅅ)•   bear
+┻┳|･ω･)   hide
+（ﾟ∈ﾟ）   bird
+<（ё）>   bird
+ˏ₍•ɞ•₎ˎ   bird
+ˎ₍•ʚ•₎ˏ   bird
+(★^O^★)   excited
+o(^▽^)o   excited
+o(≧∇≦o)   excited
+╮(─▽─)╭   whatever shrug
+ლ(ಠ_ಠლ)   whatever
+(‘∀’●)♡   love
+(ʃƪ˘ﻬ˘)   love kiss
+ƪ(♥ﻬ♥)ʃ   shrug
+(/ﾟДﾟ)/   angry
+щ(ಥДಥщ)   angry
+ლ(ಠ益ಠლ   angry
+ლಠ益ಠ)ლ   angry
+t(-_-t)   angry surrender
+ͼ(ݓ_ݓ)ͽ   angry cry
+(ㄒoㄒ)   sad cry
+(;*△*;)   sad cry
+∑(;°Д°)   surprised
+\(*0*)/   surprised
+(#^.^#)   embarrassed kiss
+(◎-◎；)   confused
+(。ヘ°)   confused crazy
+щ(ºДºщ)   confused
+(=^‥^=)   cat
+(^(I)^)   bear
+| ｀Д´|   evil
+(･_-｡ )   worried
+(⊙︿⊙✿)   worried
+(ノдヽ)   scared
+Uo･ｪ･oU   dog
+U｡･ｪ･｡U   dog
+▽・ω・▽   dog
+U・♀・U   dog
+U￣ｰ￣U   dog
+┌U･ｪ･U┘   dog dance
+ζ°)))彡   ocean sea fish
+(Q )) >   ocean sea fish
+(゜))<<   ocean sea fish
+くコ:彡   ocean sea squid octopus
+(xLx)ヾ   hurt
+(ノ>ノ)   hurt
+~(>_<~)   hurt
+U・x・U   rabbit
+⁽⁽˙˟˙⁾⁾   rabbit
+(~’.’)~   dance
+(┌ﾟдﾟ)┌   dance
+(ノ‥)ノ   dance
+~(‾⌣‾~)   dance
+~(‾▿‾)~   dance
+~(‘.’~)   dance
+┌(ﾟдﾟ)┘   dance
+┌|°з°|┘   dance
+┐(ﾟдﾟ┐)   dance
+└(^o^)┐   dance
+└(ﾟдﾟ)┐   dance
+└|°ε°|┐   dance
+ƪ(˘⌣˘)┐   dance
+(´ε｀*)   kiss
+(☆´3｀)   kiss
+(≡ε≡；)   kiss
+(-ｪ-)｡o   sleep
+(:˒[￣]   sleep
+(▰˘o˘▰)   sleep
+(－ｏ⌒)   wink
+❣◕ ‿ ◕❣   cry
+ლ(ٱ٥ٱლ)   cry
+((-_-))   surrender
+ƪ(‾_‾)ʃ   surrender shrug
+φ(^∇^ )   write
+φ(◎◎ヘ)   write
+ψ(。。)   write
+(๑╹o╹)φ   write
+（Ω_Ω）   dead
+(๑′ᴗ‵๑)   animal
+(~^.^)~   fun
+(Ò囗Óױ)   angry
+―(T_T)→   dead
+˓(ᑊᘩᑊ⁎)   sad
+(///.-)   sad
+O(∩_∩)O   animal monkey
+(=˘ϖ˘=)   animal rabbit
+(〠_〠)   stare
+✌(-‿-)✌   fun
+ლ(o◡oლ)   fun
+(• ε •)   stare
+｜−・;）   hide
+川o･-･)ﾉ   hide wave
+\( ‘з’)/   excited
+σ(≧ε≦ｏ)   excited kiss
+(゜▽゜;)   crazy
+(ヘ。ヘ)   dead
+(o;TωT)o   cry
+≧(´▽｀)≦   music
+(;´・`)>   whatever
+t(ツ)_/¯   whatever shrug
+(´ε｀ )♡   kiss
+(*￣m￣)   angry
+Σ(▼□▼メ)   angry
+（≧▼≦；)   angry
+щ(ಠ益ಠщ)   angry
+o(╥﹏╥)o   sad cry surrender
+(︶︹︺)   sad
+∑(O_O；)   surprised
+(ﾉﾟ0ﾟ)ﾉ~   surprised
+w(°ｏ°)w   surprised
+(*ﾟｰﾟ)ゞ   embarrassed
+(｀_´)ゞ   confused
+(・_・ヾ   confused
+「(°ヘ°)   confused
+(゜。゜)   confused
+(=｀ω´=)   cat
+( =①ω①=)   cat
+(=;ェ;=)   cat
+(^-人-^)   cat
+~(=^‥^)/   cat
+=’①。①’=   cat
+(σ-`д･´)   evil
+(ﾒ｀ﾛ´)/   evil
+Ψ(｀▽´)Ψ   evil
+(￣◇￣;)   worried
+ミ●﹏☉ミ   worried crazy
+Σ(ﾟﾛﾟ｣)｣   worried
+ヽ(ﾟДﾟ)ﾉ   scared
+(｡☉౪ ⊙｡)   crazy
+▽・ｗ・▽   dog
+Ｕ^皿^Ｕ   dog
+U＾ェ＾U   dog
+Ｃ：。ミ   ocean sea squid octopus
+＜コ：ミ   ocean sea squid octopus
+ミ[°°]ミ   ocean sea squid octopus
+ミ．．ミ   ocean sea squid octopus
+@(o･ｪ･)@   monkey
+@(｡･o･)@   monkey
+@(*^ｪ^)@   monkey
+/(*ι*)ヾ   hurt
+(ﾉ*ﾟｰﾟ)ﾉ   dance
+(*ﾉ´□`)ﾉ   dance
+ヾ(*д*)ﾉ   dance
+ヾ(^^ゞ)   dance
+ƪ(‾.‾“)┐   dance
+(*￣з￣)   kiss
+(○´3｀)ﾉ   kiss wave
+(ι´Д｀)ﾉ   sleep
+∑(￣□￣)   sleep
+(≚ᄌ≚)ƶƵ   sleep
+(´0ﾉ｀*)   music
+<(¬＿¬<)   think
+(/・0・)   wave
+(*^･ｪ･)ﾉ   wave
+(^ Q ^)/   wave
+＼(-o- )   wave surrender
+~(＾◇^)/   wave wink
+╭(°ﾛ°”)╯   wave
+ﾍ(ﾟ∀ﾟ*)ﾉ   wave
+(⌒.−)＝★   wink
+(oT-T)尸   cry surrender
+(/ _ ; )   cry surrender
+（πーπ）   cry
+(இ﹏இ`｡)   cry
+o(TヘTo)   cry
+（~～~）   surrender
+φ(．．;)   write
+___ψ(‥ )   write
+(＊0＊;)   dead
+(=^ェ^=)   animal cat
+<º))))><   animal ocean sea fish
+┌( ಠ_ಠ)┘   stare
+┐( ˘_˘)┌   whatever shrug
+（＠◇＠）   bird
+٩(๑ơలơ)۶♡   excited
+ヽ(｀◇´)/   surrender
+＼(☆o◎)／   crazy
+¯\(°_o)/¯   whatever crazy shrug
+(♥ó㉨ò)ﾉ♡   bear
+～(^з^)-♡   kiss
+（;≧皿≦）   angry sleep
+(＃｀д´)ﾉ   angry
+＼(`O´θ／   angry
+凸(-0-メ)   angry
+凸ಠ益ಠ)凸   angry
+╭(๑¯д¯๑)╮   angry
+((T.T； )   sad cry
+(； T.T))   sad cry
+・(/Д`)・   sad
+(´Ａ｀。)   sad
+(。┰ω┰。)   sad cry
+（ｉДｉ）   sad cry
+(ﾟ´Д｀ﾟ)ﾟ   sad
+p(´⌒｀｡q)   sad
+o(；△；)o   sad cry
+（゜◇゜）   surprised
+＼(>o<)ノ   surprised
+(´⊙ω⊙`)！   surprised
+(#｀ε´#ゞ   embarrassed
+\(//∇//)\   embarrassed
+(<o///v>)   embarrassed
+(-_-)ゞ゛   confused
+(´｀;) ？   confused
+(´−｀) ﾝｰ   confused
+(`へ´*)ノ   smug
+(=^-ω-^=)   cat
+(^･o･^)ﾉ”   cat
+川´･ω･`川   bear
+(／(ｴ)＼)   bear
+(´(エ)｀)   bear
+o(｀ω´*)o   evil
+(ц｀ω´ц*)   evil
+(-’๏_๏’-)   worried
+\(￣□￣)\   worried
+(☉ε　⊙ﾉ)ﾉ   crazy
+ＵＴｪＴＵ   dog
+(U・x・U)   dog
+└@(･ｪ･)@┐   dog monkey dance
+ヾ(●ω●)ノ   dog
+>゜))))彡   ocean sea fish
+V=(° °)=V   ocean sea crab
+( ´(00)`)   pig
+／(x~x)＼   hurt
+☆⌒(＞。≪)   hurt
+ヘ(>_<ヘ)   hurt
+U=･ x ･=U   rabbit
+U=๏ x ๏=U   rabbit
+(ㅇㅅㅇ❀)   rabbit
+／(=∵=)＼   rabbit
+⌒(｡･.･｡)⌒   rabbit
+U ´꓃ ` U   rabbit
+૮(⋆❛ہ❛⋆)ა   rabbit
+(/・・)ノ   dance
+(o´･_･)っ   dance
+＼(ﾟｰﾟ＼)   dance
+。(⌒∇⌒。)   dance
+(。⌒∇⌒)。   dance
+(~￣▽￣)~   dance
+(ノ°ο°)ノ   dance
+＼(^ω^＼)   dance
+┏(｀ー´)┛   dance
+┏(＾0＾)┛   dance
+┗(｀ー´)┓   dance
+ヾ(ﾟ∀ﾟゞ)   dance
+ヘ(^_^ヘ)   dance fun
+|(￣3￣)|   kiss
+ϵ( ‘Θ’ )϶   kiss
+ヾ(❛ε❛“)ʃ   kiss
+（)´д`(）   sleep
+˓(¦:ɝ[▓▓]   sleep
+ヽ(´Д｀ヽ   music
+♪(๑ᴖ◡ᴖ๑)♪   music
+♪(o^0^)o♪   music
+m(￢0￢)m   think sorry
+(o・・o)/   wave
+~ヾ ＾∇＾   wave
+ヽ(๏∀๏ )ﾉ   wave
+(シ_ _)シ   sorry
+(ↀДↀ)⁼³₌₃   run
+ヘ(_ _ヘ)   surrender
+＿φ(°-°=)   write
+φ(°ρ°*)メ   write
+໒(⊙ᴗ⊙)७✎▤   write
+ヾ(×× ) ﾂ   dead
+╭( ✖_✖ )╮   dead
+• º–π–º •   animal stare
+(°◡°♡).:｡   animal
+ϵ( 'Θ' )϶   animal stare
+¯\_◉‿◉_/¯   fun whatever shrug
+¯\_ಠ_ಠ_/¯   whatever stare shrug
+[ ± _ ± ]   sad
+<(-'.'-)>   animal
+（。々°）   fun
+（°々。）   fun
+ꉂ (๑¯ਊ¯)σ   bird
+( ｀o)ﾉﾉ ┫   flip table
+ヽ( ★ω★)ノ   excited
+ヽ(;^o^ヽ)   excited dance
+ヽ(*⌒∇⌒*)ﾉ   excited
+d=(´▽｀)=b   hug
+(゜▼゜＊）   crazy
+☆ﾐ(o*･ω･)ﾉ   wave run
+ヽ(。_°)ノ   whatever crazy
+＼(;´□｀)/   whatever
+┐(‘～`；)┌   whatever shrug
+ლ(´◉❥◉｀ლ)   kiss
+[○･｀Д´･○]   angry
+o(-`д´- ｡)   angry
+（▼へ▼メ）   angry
+＼(｀0´)／   angry
+(ノಠ益ಠ)ノ   angry
+（；へ：）   sad cry
+{{p´Д｀q}}   sad
+щ(゜ロ゜щ)   surprised
+（*/∇＼*）   embarrassed
+(#／。＼#)   embarrassed
+（//･_･//)   embarrassed
+`(๑ △ ๑)`*   crazy
+( ；｀ヘ´)   smug
+<(￣︶￣)>   smug
+(=ＴェＴ=)   cat
+ヽ(^‥^=ゞ)   cat dance
+（=´∇｀=）   cat
+ヾ(=ﾟ･ﾟ=)ﾉ   cat
+(=ｘェｘ=)   cat dead
+(￣(エ)￣)   bear
+( (ﾐ´ω`ﾐ))   bear
+⊂(^(工)^)⊃   bear
+(｀(エ)´)ﾉ   bear
+⊂(◎(工)◎)⊃   bear
+^(#｀∀´)_Ψ   evil
+ψ(*｀ー´)ψ   evil
+（−＿−；）   worried
+＼(●o○;)ノ   crazy
+ｖ・。・Ｖ   dog
+▼o・ェ・o▼   dog
+≧〔゜゜〕≦   ocean sea
+ミ(・・)ミ   ocean sea squid octopus
+(*’(OO)’*)   pig
+(；ﾟ(OO)ﾟ)   pig
+(￣(▽▽)￣)   pig
+(=｀(∞)´=)   pig
+((((*｡_｡)_   hurt
+◎☆（♯××）┘   hurt
+☆￣(＞。☆)   hurt
+〜(^∇^〜）   dance
+（。ˇ ⊖ˇ）   kiss
+（*＾3＾）   kiss
+(。≖ˇ3ˇ≖｡)   kiss
+（＾Ｏ＾☆♪   music
+(ﾉ> ◇ <)ﾉ♪   music
+ヾ(´ρ｀)〃   music
+(￣∠ ￣ )ﾉ   wave
+＼(°o°；）   wave
+(。^_・)ノ   wave wink
+ヘ(‘◇’、)/   wave
+ヘ(°￢°)ノ   wave
+（＾＿・）   wink
+৫(”ړ৫)˒˒˒˒   run
+(ノ#-_-)ノ   surrender
+y-(~。~；)   surrender
+ﾍ(￣ ￣;ﾍ)   surrender
+＿〆(。。)   write
+૮(ㅍ◞◟ㅍ)ა   troll
+へ（>_<へ)   dead
+<(:,..,:)>   animal
+[^._.^]ﾉ彡   animal
+(  ⚆ _ ⚆ )   stare
+(●°u°●) 」   fun wave
+人◕ ‿‿ ◕人   animal
+(｀◔ ω ◔´)   animal pig
+♡(㋭ ਊ ㋲)♡   bird
+(/-o-)/ ⌒ ┤   flip table
+(/ToT)/ ~┻┻   flip table
+ヾ(@^▽^@)ノ   excited
+o((*^▽^*))o   excited
+＼(*T▽T*)／   excited cry
+ヽ(；▽；)ノ   cry
+ヾ(@°▽°@)ノ   crazy
+⊂((・▽・))⊃   hug
+ヽ(‘ ∇‘ )ノ   crazy
+┗┃・ ■ ・┃┛   whatever
+ヾ(´A｀)ノﾟ   whatever
+ヾ(*´ー`)ノ   whatever
+（´・｀ ）♡   kiss
+(ɔˆ ³(ˆ⌣ˆc)   kiss
+(っ˘з(˘⌣˘ )   kiss
+(━┳━ _ ━┳━)   angry
+ヽ(´□｀。)ﾉ   sad
+(/□＼*)・゜   sad cry
+((o(;△;)o))   sad cry
+━Σ(ﾟДﾟ|||)━   surprised
+\(///Σ///)\   embarrassed
+ー(￣～￣)ξ   smug
+o(^・x・^)o   cat
+＼(=^‥^)/’`   cat
+(=^･ω･^)y＝   cat
+⊂(ο･㉨･ο）⊃   bear
+ヾ(´(ｴ)｀ﾉﾞ   bear wave
+(*-`ω´- )人   evil
+Σ（ﾟдﾟlll）   worried
+ヘ(°◇、°)ノ   crazy wave
+>^)))< ～～   ocean sea fish
+@(/o･ｪ･o)@/   monkey
+(,,๏ ⋏ ๏,,)   rabbit
+／(･ × ･)＼   rabbit
+／(=´x`=)＼   rabbit
+／(=⌒x⌒=)＼   rabbit
+／(≧ x ≦)＼   rabbit
+／(v x v)＼   rabbit
+⌒(=･ x ･=)⌒   rabbit
+⌒(=๏ x ๏=)⌒   rabbit
+ヾ(⌐■_■)ノ♪   fun
+（￣ε￣＠）   kiss
+（○゜ε＾○）   kiss wink
+ヽ(*´з｀*)ﾉ   kiss music
+＿ﾉ乙(､ﾝ､)_   sleep
+( -_-)>c[_]   sleep
+ƪ(‾￣o￣”)ʃ   sleep shrug
+(∪｡∪)｡｡｡zzz   sleep
+♪٩(✿′ᗜ‵✿)۶♪   music
+(*⌒▽⌒*)θ～♪   music
+˳/(˘ε ˘)♬♪♫   music
+ᒄ₍⁽ˆ⁰ˆ⁾₎ᒃ♪♬   music
+( ง ´◇｀)ง♪   music
+(,, ･∀･)ﾉ゛   wave
+（ ゜ρ゜)ノ   wave
+(*￣Ｏ￣)ノ   wave
+ヾ( ‘ – ‘*)   wave
+ヾ(oﾟｘﾟo)ﾉ   wave
+＜(。_。)＞   sorry
+(一。一;;）   surrender
+〆(・∀・＠)   write
+〆(´Ｕ_｀*)   write
+…φ(o´ωﾟo)φ…   write
+ヽ༼ ಠ益ಠ ༽ﾉ   troll
+Σ(๑+⌓ o｡)シ   dead
+Ɛ:[,,_,,]=~   animal cat fun
+♒((⇀‸↼))♒   think
+=＾● ⋏ ●＾=   animal cat
+~=[,,_,,]:3   animal cat fun
+(ﾉ；；)ﾉ~┻━┻   flip table
+ノToT)ノ ~┻┻   flip table
+(ﾉToT)ﾉ ﾐ ┸┸   flip table
+(ﾉ≧∇≦)ﾉ ﾐ ┸┸   flip table
+٩(ó｡ò۶ ♡)))♬   music
+＼( ｀.∀´)／   surrender
+へ(゜∇、°)へ   crazy
+ヽ(ー_ー )ノ   whatever
+ヽ(´～｀；）   whatever
+ヽ（*ω。）ノ   whatever
+(づ￣ ³￣)づ   hug kiss
+ヾ(◍’౪`◍)ﾉﾞ♡   wave
+(」゜ロ゜)」   surprised
+(*´；ェ；`*)   cry
+｡゜(｀Д´)゜｡   cry
+(〃￣ω￣〃ゞ   embarrassed
+(((￣へ￣井)   smug
+(●｀･(ｴ)･´●)   bear
+ヾ(T(エ)Tヽ)   bear
+⊂(￣(工)￣)⊃   bear
+⊂(・(ェ)・)⊃   bear
+((*゜Д゜)ゞ”   worried
+ヘ（。□°）ヘ   crazy hurt
+~(๑ñ﹏ ⊙☆)ノ   crazy
+ヽ(｡ゝω・｡)ﾉ   crazy
+(/)(;,,;)(/)   ocean sea crab
+｢(＝＞o≦＝)ﾉ   hurt
+／(^ x ^=)＼   rabbit
+(´〜｀*) zzz   sleep
+＼(o￣∇￣o)/   sleep
+ヾ(。￣□￣)ﾂ   sleep
+٩(´Д` ;)۶:.*   sleep
+(*￣0￣)θ～♪   music
+（^[]＾）／♪   music
+┐(・。・┐) ♪   music
+ヾ(´□｀* )ノ   music
+（＾＿－）≡★   wink
+☆～（ゝ。∂）   wink
+・゜・(ノД`)   cry
+ε=ε=(怒ﾟДﾟ)ﾉ   run
+＼（－－）／   surrender
+＿φ(￣ー￣ )   write
+༼༼;; ;°;ਊ°;༽   troll
+◎ヽ(^･ω･^=)~   animal cat
+（〃・・〃）   stare
+/|\( ;,;)/|\   animal
+┬┴┬┴┤(･_├┬┴┬┴   hide
+⊹⋛⋋( ՞ਊ ՞)⋌⋚⊹   bird
+┬──┬◡ﾉ(° -°ﾉ)   flip table unflip
+(/#-_-)/~┻┻〃   flip table
+(/ToT)/_┫・..   flip table
+(ﾉ*’‐’)ﾉ ﾐ ┸┸   flip table
+＼（Ｔ∇Ｔ）／   cry
+ヾ(@゜∇゜@)ノ   crazy
+（＠´＿｀＠）   embarrassed
+＼（〇_ｏ）／   whatever
+(｡・//ε//・｡)   kiss
+٩(๑•◡-๑)۶ⒽⓤⒼ❤   hug
+(((( ;°Д°))))   surprised
+(.=^・ェ・^=)   cat
+(＠￣Д￣＠；)   worried
+ヾ(｡ꏿ﹏ꏿ)ﾉﾞ   crazy
+щ (*ㅇ△ Φ☆)ノ   crazy
+ヘ(゜Д、゜)ノ   crazy wave
+ヽ(*’(OO)’)ﾉﾟ   pig
+／(=๏ x ๏=)＼   rabbit
+／(=✪ x ✪=)＼   rabbit
+（＠ーεー＠）   kiss
+( ˘•૩•˘ ).｡oஇ   kiss
+(_ _)ヾ(‘ロ‘)   sleep
+(:3[▓▓▓▓▓▓▓▓]   sleep
+［(－－)］zzz   sleep
+＼（´Ｏ｀）／   sleep
+Σ(￣。￣ノ)ノ   sleep
+*｡٩(ˊωˋ*)و✧*｡   sleep
+(\˳˘ ɜ˘)˳ ♬♪♫   music
+｢(;´Σ ｀〃)ヘ   music
+♪♪)>ш=(^。^ )   music
+ヾ(｡´･_●･`｡)☆   wave
+且_(ﾟ◇ﾟ；)ノﾞ   wave
+_:(´□`」 ∠):_   sorry
+ヘ（´ｏ｀）ヘ   surrender
+(◕(' 人 ') ◕)   animal
+(ﾉಥ益ಥ）ﾉ ┻━┻   flip table
+(╯'□')╯︵ ┻━┻   flip table
+~~……ヾლ∩з…….~~   bird
+(ノ-_-)ノ ~┻━┻   flip table
+(ノ｀´）ノミ┻┻   flip table
+(ﾉ￣□￣)ﾉ ~┻━┻   flip table
+ヽ(　￣д￣;)ノ   whatever
+( c//”-}{-*\x)   kiss
+（*＾3＾）/～♡   kiss
+(>^_^)><(^o^<)   hug
+ლ(|||⌒εー|||)ლ   kiss
+((((；゜Д゜)))   surprised
+＼(・｀(ｪ)・)/   bear
+Σ(♡＠﹏ ＠☆)ﾉ”   crazy
+ｏ（Ｕ・ω・）⊃   dog
+(○｀（●●）´○)ﾉ   pig
+｡ﾟ(ﾟ´(00)`ﾟ)ﾟ｡   pig
+┗( ●-﹏ ｀｡)づ   hurt
+(*゜▽゜ノノ゛☆   music
+♬♫♪◖(●。●)◗♪♫♬   music
+ヾ(・◇・)ﾉθ～♪   music
+ε=ε=ε=┌(๑ʘ∀ʘ)┘   run
+ε=ε=(っ*´□`)っ   run
+\(-ㅂ-)/ ♥ ♥ ♥   fun
+┻━┻ ︵ ლ(⌒-⌒ლ)   flip table
+(ﾉಥДಥ)ﾉ︵┻━┻･/   flip table
+(._.) ~ ︵ ┻━┻   flip table
+╮ (. ❛ ᴗ ❛.) ╭   whatever shrug
+(∿°○°)∿ ︵ ǝʌol   flip table
+( ﾉo|o)ﾉ ┫｡ﾟ:.:   flip table
+（/＞□＜）/亠亠   flip table
+(ノ-o-)ノ⌒┳ ┫┻┣   flip table
+（ノ｀_´）ﾉ~~┴┴   flip table
+(丿>ロ<)丿 ┤∵:.   flip table
+┗┐ヽ(′Д、`*)ﾉ┌┛   whatever shrug
+（。_°☆＼(- – )   hurt
+ヾ(◜▿‾ 三 ‾▿◝)ﾉ   wave
+[≡] 〆(・⺫・‶)   write
+\m/...(>.<)…\m/   fun music
+（*＾＾）/~~~~◎   fun
+ʕノ•ᴥ•ʔノ ︵ ┻━┻   flip table animal
+(ﾉ｀Д)ﾉ:・’∵:.┻┻   flip table
+╰(　´◔　ω　◔ `)╯   whatever
+《/(￣(ｴ)￣)ゞ》   bear
+ヽ（゜ロ゜；）ノ   worried
+ヾ (✿＞﹏ ⊙〃)ノ   crazy
+(〓￣(∵エ∵)￣〓)   dog
+♪♪(o*゜∇゜)o～♪♪   music
+┬─┬ ノ( ゜-゜ノ)   flip table unflip
+┬─┬ ︵ /(.□. \）   flip table
+(*・_・)ノ⌒*`*`*   fun
+ʕ　·ᴥ·ʔ　ʕ·ᴥ·　ʔ   animal bear
+| (• ◡•)| (❍ᴥ❍ʋ)   fun
+(┛^_^)┛彡<ǝlqɐʇ>   flip table
+(/¯◡ ‿ ◡)/¯ ~ ┻━┻   flip table
+(ノ-0-)ノ　┫∵：．   flip table
+(ノ#-_-)ノ ミ　┴┴   flip table
+(メ–)ノノ。。。┻┻   flip table
+（ノT＿T)ノ ＾┻━┻   flip table
+ヾ(＠＾(∞)＾＠)ノ   pig
+(Ɔ˘⌣˘)(˘⌣˘)˘⌣˘ C)   hug
+˓( ˶ ❛ ꁞ ❛ ˶ )˒˒   kiss
+┗[© ♒ ©]┛ ︵ ┻━┻   flip table
+（　＾）／占~~~~~   fun
+└[∵┌]└[ ∵ ]┘[┐∵]┘   fun
+(╯°□°)╯︵ ʞooqǝɔɐℲ   flip table
+(ﾉ＝ﾟﾛﾟ)ﾉ ⌒┫:･’.::   flip table
+（ノ○Д○）ノ＝＝＝┠   flip table
+( ๑ ᴖ ᴈ ᴖ)ᴖ ᴑ ᴖ๑)❣   kiss
+♪~♪ ヽ໒(⌒o⌒)७ﾉ ♪~♪   music
+ε=ε=ε=ε=┏(;￣▽￣)┛   run
+(ó ì_í)=óò=(ì_í ò)   fun
+(╯°Д°）╯︵/(.□ . \)   flip table
+ノ┬─┬ノ ︵ ( \o°o)\   flip table
+(*´ ˘ `*).｡oO ( ♡ )   think
+(๑´▿｀๑)♫•*¨*•.¸¸♪✧   music
+✿♬ﾟ+.(｡◡‿◡)♪.+ﾟ♬✿。   music
+(／o^)/ °⊥ ＼(^o＼)   fun
+ヽ(^o^)ρ┳┻┳°σ(^o^)/   fun
+♪ヽ( ⌒o⌒)人(⌒-⌒ )v ♪   music
+♬♪♫ ヾ(*・。・)ﾉ ♬♪♫   music
+ε=ε=ε=ε=ε=ε=┌(๑ʘ∀ʘ)┘   run
+＼(-___________-;)／   surrender
+｡:ﾟ*+;(●´･д･`●);+*ﾟ:｡   worried
+(((*°▽°*)八(*°▽°*)))♪   music
+♪┏(・o･)┛♪┗ ( ･o･) ┓♪   fun music
+(ღ˘⌣˘ღ) ♫･*:.｡. .｡.:*･   music
+／(v x v｡)人(｡v x v)＼   rabbit
+◔̯︵◔   music
+٩(×̯×)۶   dead
+ヽ༼ຈل͜ຈ༽ﾉ   troll
+૮⍝◜•˕̮•◝⍝ა   rabbit
+ლ(́◉◞౪◟◉‵ლ)   hug
+ཥ•̫͡•ཤ   troll
+( ͒•·̫|   hide
+(≖͞_≖̥)   dead
+ˁ ¨̫͌ ˀ   troll
+ʕ⁎̯͡⁎ʔ༄   animal
+(๑•̆૩•̆)   think
+༼•͟ ͜ •༽   troll
+|ω･)و ̑̑༉   hide
+(ʃ⌣́,⌣́ƪ)   think
+꜀( ˊ̠˂˃ˋ̠ )꜆   bird
+(っ˘̩╭╮˘̩)っ   hug
+(‘•̀ ▽ •́ )φ   write
+(((༼•̫͡•༽)))   troll
+─=≡Σ(([ ⊐•̀⌂•́]⊐   run
+─=≡Σ((( つ•̀ω•́)つ   run
+༼ ͒ ͓ ͒༽   troll
+༼ ͒ ̶ ͒༽   troll
+٩(͡๏̯͡๏)۶   surprised
+¯\_(⌣̯̀⌣́)_/¯   whatever shrug
+†=”Ⴛ̸ ♡(˃͈ દ ˂͈ ༶ )   write
+(•̯͡.•̯͡)   stare
+༼•̃͡ ɷ•̃͡༽   troll
+ʕ•̫͡•ʕ*̫͡*ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ*̫͡*ʔ   animal bear fun
+KAOMOJI_LIST_END
+}
+
+choice=$( { cat "$custom"; builtin_list; } \
+    | grep -Ev '^[[:space:]]*(#|$)' \
+    | awk '{ k = $0; sub(/ {3,}.*$/, "", k); if (!seen[k]++) print }' \
+    | fuzzel --dmenu --match-mode exact --no-sort \
+        --prompt "kaomoji › " --width 50 --lines 12 ) || exit 0
+
+kaomoji=$(printf '%s' "$choice" | sed -E 's/ {3,}.*$//')
+[ -n "$kaomoji" ] || exit 0
+
+printf '%s' "$kaomoji" | wl-copy
+if command -v notify-send >/dev/null; then
+    notify-send -a Kaomoji -t 1500 "Copied, press Ctrl+V" "$kaomoji"
+fi
